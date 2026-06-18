@@ -1,1 +1,293 @@
-var ChartRenderer=function(){"use strict";function t(t,e,i,n){t.fillStyle=n,t.strokeStyle="#FFFFFF",t.lineWidth=1,t.beginPath();for(var o=0;o<10;o++){var l=o%2==0?10:4,a=3*Math.PI/2+2*Math.PI*o/10,r=e+Math.cos(a)*l,f=i+Math.sin(a)*l;0===o?t.moveTo(r,f):t.lineTo(r,f)}t.closePath(),t.fill(),t.stroke()}return{drawVtChart:function(t,e,i){var n=t.getContext("2d"),o=window.devicePixelRatio||1,l=t.parentElement.getBoundingClientRect(),a=l.width>100?l.width:900;t.width=a*o,t.height=600*o,t.style.width=a+"px",t.style.height="600px",n.scale(o,o);var r=50,f=80,s=a-f-40,h=600-r-70,c=1/0,x=-1/0,g=1/0,v=-1/0;e.forEach(function(t){t.tLog.forEach(function(t){c=Math.min(c,t),x=Math.max(x,t)}),t.vRaw.forEach(function(t){isFinite(t)&&(g=Math.min(g,t),v=Math.max(v,t))}),t.tLogDense.forEach(function(t){isFinite(t)&&(c=Math.min(c,t),x=Math.max(x,t))}),t.vDense.forEach(function(t){isFinite(t)&&(g=Math.min(g,t),v=Math.max(v,t))})}),isFinite(c)&&isFinite(x)||(c=0,x=5),isFinite(g)&&isFinite(v)||(g=0,v=100);var d=.05*(x-c)||.5,m=.08*(v-g)||1;function F(t){return f+(t-c)/(x-c)*s}function u(t){return r+h-(t-g)/(v-g)*h}c-=d,x+=d,g-=m,v+=m,n.fillStyle="#FFFFFF",n.fillRect(0,0,a,600),n.strokeStyle="#E5E7EB",n.lineWidth=.5;for(var M=0;M<=5;M++){var T=c+(x-c)*M/5;n.beginPath(),n.moveTo(F(T),r),n.lineTo(F(T),r+h),n.stroke()}for(var E=0;E<=5;E++){var S=g+(v-g)*E/5;n.beginPath(),n.moveTo(f,u(S)),n.lineTo(f+s,u(S)),n.stroke()}for(n.strokeStyle="#333",n.lineWidth=1.5,n.beginPath(),n.moveTo(f,r),n.lineTo(f,r+h),n.lineTo(f+s,r+h),n.stroke(),e.forEach(function(t,e){for(var o=i[e%i.length],l=0;l<t.tLog.length;l++)n.fillStyle=o,n.globalAlpha=.5,n.beginPath(),n.arc(F(t.tLog[l]),u(t.vRaw[l]),3,0,2*Math.PI),n.fill();n.globalAlpha=1,n.strokeStyle=o,n.lineWidth=2.5,n.beginPath();var a=!0;for(l=0;l<t.tLogDense.length;l++){var r=F(t.tLogDense[l]),f=u(t.vDense[l]);isFinite(r)&&isFinite(f)&&(a?(n.moveTo(r,f),a=!1):n.lineTo(r,f))}n.stroke()}),n.fillStyle="#333",n.textAlign="center",n.font='bold 13px "Microsoft YaHei", "SimHei", sans-serif',M=0;M<=5;M++){T=c+(x-c)*M/5;n.fillText(T.toFixed(1),F(T),r+h+20)}for(n.font='bold 14px "Microsoft YaHei", "SimHei", sans-serif',n.fillText("对数时间 log₁₀(t)",f+s/2,r+h+55),n.textAlign="right",n.font='bold 13px "Microsoft YaHei", "SimHei", sans-serif',E=0;E<=5;E++){S=g+(v-g)*E/5;n.fillText(S.toFixed(2),f-10,u(S)+5)}n.save(),n.translate(15,r+h/2),n.rotate(-Math.PI/2),n.textAlign="center",n.font='bold 14px "Microsoft YaHei", "SimHei", sans-serif',n.fillText("表面电位 V (V)",0,0),n.restore(),n.textAlign="center",n.font='bold 16px "Microsoft YaHei", "SimHei", sans-serif',n.fillStyle="#1a1a2e",n.fillText("表面电位衰减动力学分析",f+s/2,r-15),n.textAlign="left",n.font='12px "Microsoft YaHei", "SimHei", sans-serif';var p=r+5;return e.forEach(function(t,e){n.fillStyle=i[e%i.length],n.fillRect(f+s-280,p,15,15),n.fillStyle="#333",n.fillText(t.label||"数据"+(e+1),f+s-260,p+12),p+=22}),t},drawEtNtChart:function(e,i,n){var o=e.getContext("2d"),l=window.devicePixelRatio||1,a=e.parentElement.getBoundingClientRect(),r=a.width>100?a.width:900;e.width=r*l,e.height=600*l,e.style.width=r+"px",e.style.height="600px",o.scale(l,l);var f=50,s=90,h=r-s-40,c=600-f-70,x=1/0,g=-1/0,v=1/0,d=-1/0;i.forEach(function(t){t.E_t.forEach(function(t){isFinite(t)&&t>=0&&t<=2&&(x=Math.min(x,t),g=Math.max(g,t))}),t.N_t.forEach(function(t){isFinite(t)&&t>=0&&(v=Math.min(v,t),d=Math.max(d,t))})}),isFinite(x)||(x=0,g=2),isFinite(v)||(v=0,d=1e15);var m=.05*(g-x)||.1,F=.1*(d-v)||1e13;function u(t){return s+(t-x)/(g-x)*h}function M(t){return f+c-(t-v)/(d-v)*c}x=Math.max(0,x-m),g+=m,v=Math.max(0,v-F),d+=F,o.fillStyle="#FFFFFF",o.fillRect(0,0,r,600),o.strokeStyle="#E5E7EB",o.lineWidth=.5;for(var T=0;T<=5;T++){var E=x+(g-x)*T/5;o.beginPath(),o.moveTo(u(E),f),o.lineTo(u(E),f+c),o.stroke()}for(var S=0;S<=5;S++){var p=v+(d-v)*S/5;o.beginPath(),o.moveTo(s,M(p)),o.lineTo(s+h,M(p)),o.stroke()}for(o.strokeStyle="#333",o.lineWidth=1.5,o.beginPath(),o.moveTo(s,f),o.lineTo(s,f+c),o.lineTo(s+h,f+c),o.stroke(),i.forEach(function(e,i){var l=n[i%n.length];o.strokeStyle=l,o.lineWidth=2.5,o.beginPath();for(var a=!0,r=0;r<e.E_t.length;r++)if(!(e.E_t[r]<x||e.E_t[r]>g)){var s=M(e.N_t[r]);if(isFinite(s)&&s>f&&s<f+c){var h=u(e.E_t[r]);a?(o.moveTo(h,s),a=!1):o.lineTo(h,s)}}o.stroke(),null!=e.shallow_E&&t(o,u(e.shallow_E),M(e.shallow_N),l),null!=e.deep_E&&t(o,u(e.deep_E),M(e.deep_N),l)}),o.fillStyle="#333",o.textAlign="center",o.font='bold 13px "Microsoft YaHei", "SimHei", sans-serif',T=0;T<=5;T++){E=x+(g-x)*T/5;o.fillText(E.toFixed(2),u(E),f+c+20)}for(o.font='bold 14px "Microsoft YaHei", "SimHei", sans-serif',o.fillText("陷阱能级深度 Eₜ (eV)",s+h/2,f+c+55),o.textAlign="right",o.font='bold 13px "Microsoft YaHei", "SimHei", sans-serif',S=0;S<=5;S++){p=v+(d-v)*S/5;o.fillText(p.toExponential(1),s-10,M(p)+5)}o.save(),o.translate(15,f+c/2),o.rotate(-Math.PI/2),o.textAlign="center",o.font='bold 14px "Microsoft YaHei", "SimHei", sans-serif',o.fillText("面陷阱密度 Nₛₜ (eV⁻¹m⁻²)",0,0),o.restore(),o.fillStyle="#1a1a2e",o.textAlign="center",o.font='bold 16px "Microsoft YaHei", "SimHei", sans-serif',o.fillText("聚合物面陷阱能级分布 (Surface Trap Density)",s+h/2,f-15),o.textAlign="left",o.font='12px "Microsoft YaHei", "SimHei", sans-serif';var b=f+5;return i.forEach(function(t,e){o.fillStyle=n[e%n.length],o.fillRect(s+h-280,b,15,15),o.fillStyle="#333",o.fillText(t.label||"数据"+(e+1),s+h-260,b+12),b+=22}),e}}}();
+﻿var ChartRenderer = (function() {
+  "use strict";
+
+  // Draw star marker for peak positions
+  function drawStar(ctx, x, y, color) {
+    ctx.fillStyle = color;
+    ctx.strokeStyle = "#FFFFFF";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (var i = 0; i < 10; i++) {
+      var r = i % 2 === 0 ? 12 : 5;
+      var angle = -Math.PI / 2 + (2 * Math.PI * i) / 10;
+      var px = x + Math.cos(angle) * r;
+      var py = y + Math.sin(angle) * r;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  return {
+    // ===== V-t Chart (Surface Potential Decay) =====
+    drawVtChart: function(canvas, datasets, colors) {
+      var ctx = canvas.getContext("2d");
+      var dpr = window.devicePixelRatio || 1;
+      var rect = canvas.parentElement.getBoundingClientRect();
+      var W = rect.width > 100 ? rect.width : 900;
+      var H = 600;
+      canvas.width = W * dpr;
+      canvas.height = H * dpr;
+      canvas.style.width = W + "px";
+      canvas.style.height = H + "px";
+      ctx.scale(dpr, dpr);
+
+      var margin = { top: 55, right: 50, bottom: 80, left: 90 };
+      var plotW = W - margin.left - margin.right;
+      var plotH = H - margin.top - margin.bottom;
+
+      // Compute data ranges
+      var xMin = Infinity, xMax = -Infinity, yMin = Infinity, yMax = -Infinity;
+      datasets.forEach(function(ds) {
+        ds.tLog.forEach(function(v) { xMin = Math.min(xMin, v); xMax = Math.max(xMax, v); });
+        ds.vRaw.forEach(function(v) { if (isFinite(v)) { yMin = Math.min(yMin, v); yMax = Math.max(yMax, v); } });
+        ds.tLogDense.forEach(function(v) { xMin = Math.min(xMin, v); xMax = Math.max(xMax, v); });
+        ds.vDense.forEach(function(v) { if (isFinite(v)) { yMin = Math.min(yMin, v); yMax = Math.max(yMax, v); } });
+      });
+      if (!isFinite(xMin)) { xMin = 0; xMax = 5; }
+      if (!isFinite(yMin)) { yMin = 0; yMax = 100; }
+
+      var xPad = 0.05 * (xMax - xMin) || 0.5;
+      var yPad = 0.08 * (yMax - yMin) || 1;
+      xMin -= xPad; xMax += xPad; yMin -= yPad; yMax += yPad;
+
+      function toX(x) { return margin.left + (x - xMin) / (xMax - xMin) * plotW; }
+      function toY(y) { return margin.top + plotH - (y - yMin) / (yMax - yMin) * plotH; }
+
+      // Background
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fillRect(0, 0, W, H);
+
+      // Grid
+      ctx.strokeStyle = "#E5E7EB";
+      ctx.lineWidth = 0.5;
+      for (var i = 0; i <= 5; i++) {
+        var gx = xMin + (xMax - xMin) * i / 5;
+        ctx.beginPath(); ctx.moveTo(toX(gx), margin.top); ctx.lineTo(toX(gx), margin.top + plotH); ctx.stroke();
+      }
+      for (var j = 0; j <= 5; j++) {
+        var gy = yMin + (yMax - yMin) * j / 5;
+        ctx.beginPath(); ctx.moveTo(margin.left, toY(gy)); ctx.lineTo(margin.left + plotW, toY(gy)); ctx.stroke();
+      }
+
+      // Axes
+      ctx.strokeStyle = "#333333";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(margin.left, margin.top);
+      ctx.lineTo(margin.left, margin.top + plotH);
+      ctx.lineTo(margin.left + plotW, margin.top + plotH);
+      ctx.stroke();
+
+      // Data points and fit curves
+      datasets.forEach(function(ds, idx) {
+        var color = colors[idx % colors.length];
+        // Scatter points
+        ctx.fillStyle = color;
+        ctx.globalAlpha = 0.5;
+        for (var i = 0; i < ds.tLog.length; i++) {
+          ctx.beginPath();
+          ctx.arc(toX(ds.tLog[i]), toY(ds.vRaw[i]), 4, 0, 2 * Math.PI);
+          ctx.fill();
+        }
+        // Fit curve
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        var started = false;
+        for (var i = 0; i < ds.tLogDense.length; i++) {
+          var px = toX(ds.tLogDense[i]), py = toY(ds.vDense[i]);
+          if (isFinite(px) && isFinite(py)) {
+            if (!started) { ctx.moveTo(px, py); started = true; }
+            else ctx.lineTo(px, py);
+          }
+        }
+        ctx.stroke();
+      });
+
+      // X-axis ticks
+      ctx.fillStyle = "#333333";
+      ctx.textAlign = "center";
+      ctx.font = 'bold 14px "Microsoft YaHei", "SimHei", sans-serif';
+      for (var i = 0; i <= 5; i++) {
+        var vx = xMin + (xMax - xMin) * i / 5;
+        ctx.fillText(vx.toFixed(1), toX(vx), margin.top + plotH + 25);
+      }
+      // X-axis title
+      ctx.font = 'bold 16px "Microsoft YaHei", "SimHei", sans-serif';
+      ctx.fillText("对数时间 log\u2081\u2080(t)", margin.left + plotW / 2, margin.top + plotH + 60);
+
+      // Y-axis ticks
+      ctx.textAlign = "right";
+      ctx.font = 'bold 14px "Microsoft YaHei", "SimHei", sans-serif';
+      for (var j = 0; j <= 5; j++) {
+        var vy = yMin + (yMax - yMin) * j / 5;
+        ctx.fillText(vy.toFixed(0), margin.left - 12, toY(vy) + 5);
+      }
+      // Y-axis title (rotated)
+      ctx.save();
+      ctx.translate(20, margin.top + plotH / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.textAlign = "center";
+      ctx.font = 'bold 16px "Microsoft YaHei", "SimHei", sans-serif';
+      ctx.fillText("表面电位 V (V)", 0, 0);
+      ctx.restore();
+
+      // Title
+      ctx.textAlign = "center";
+      ctx.font = 'bold 18px "Microsoft YaHei", "SimHei", sans-serif';
+      ctx.fillStyle = "#1a1a2e";
+      ctx.fillText("表面电位等温衰减动力学分析", margin.left + plotW / 2, margin.top - 22);
+
+      // Legend
+      ctx.textAlign = "left";
+      ctx.font = '13px "Microsoft YaHei", "SimHei", sans-serif';
+      var ly = margin.top + 5;
+      datasets.forEach(function(ds, idx) {
+        ctx.fillStyle = colors[idx % colors.length];
+        ctx.fillRect(margin.left + plotW - 280, ly, 16, 16);
+        ctx.fillStyle = "#333333";
+        ctx.fillText(ds.label || ("数据" + (idx + 1)), margin.left + plotW - 258, ly + 13);
+        ly += 24;
+      });
+    },
+
+    // ===== Et-Nt Chart (Trap Density Distribution) =====
+    drawEtNtChart: function(canvas, datasets, colors) {
+      var ctx = canvas.getContext("2d");
+      var dpr = window.devicePixelRatio || 1;
+      var rect = canvas.parentElement.getBoundingClientRect();
+      var W = rect.width > 100 ? rect.width : 900;
+      var H = 600;
+      canvas.width = W * dpr;
+      canvas.height = H * dpr;
+      canvas.style.width = W + "px";
+      canvas.style.height = H + "px";
+      ctx.scale(dpr, dpr);
+
+      var margin = { top: 55, right: 50, bottom: 80, left: 100 };
+      var plotW = W - margin.left - margin.right;
+      var plotH = H - margin.top - margin.bottom;
+
+      // Compute data ranges
+      var xMin = Infinity, xMax = -Infinity, yMin = Infinity, yMax = -Infinity;
+      datasets.forEach(function(ds) {
+        ds.E_t.forEach(function(v) {
+          if (isFinite(v) && v >= 0 && v <= 2) { xMin = Math.min(xMin, v); xMax = Math.max(xMax, v); }
+        });
+        ds.N_t.forEach(function(v) {
+          if (isFinite(v) && v >= 0) { yMin = Math.min(yMin, v); yMax = Math.max(yMax, v); }
+        });
+      });
+      if (!isFinite(xMin)) { xMin = 0; xMax = 2; }
+      if (!isFinite(yMin)) { yMin = 0; yMax = 1e15; }
+
+      var xPad = 0.05 * (xMax - xMin) || 0.1;
+      var yPad = 0.10 * (yMax - yMin) || 1e13;
+      xMin = Math.max(0, xMin - xPad);
+      xMax += xPad;
+      yMin = Math.max(0, yMin - yPad);
+      yMax += yPad;
+
+      function toX(x) { return margin.left + (x - xMin) / (xMax - xMin) * plotW; }
+      function toY(y) { return margin.top + plotH - (y - yMin) / (yMax - yMin) * plotH; }
+
+      // Background
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fillRect(0, 0, W, H);
+
+      // Grid
+      ctx.strokeStyle = "#E5E7EB";
+      ctx.lineWidth = 0.5;
+      for (var i = 0; i <= 5; i++) {
+        var gx = xMin + (xMax - xMin) * i / 5;
+        ctx.beginPath(); ctx.moveTo(toX(gx), margin.top); ctx.lineTo(toX(gx), margin.top + plotH); ctx.stroke();
+      }
+      for (var j = 0; j <= 5; j++) {
+        var gy = yMin + (yMax - yMin) * j / 5;
+        ctx.beginPath(); ctx.moveTo(margin.left, toY(gy)); ctx.lineTo(margin.left + plotW, toY(gy)); ctx.stroke();
+      }
+
+      // Axes
+      ctx.strokeStyle = "#333333";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(margin.left, margin.top);
+      ctx.lineTo(margin.left, margin.top + plotH);
+      ctx.lineTo(margin.left + plotW, margin.top + plotH);
+      ctx.stroke();
+
+      // N_t curves and star markers
+      datasets.forEach(function(ds, idx) {
+        var color = colors[idx % colors.length];
+        // Curve
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        var started = false;
+        for (var i = 0; i < ds.E_t.length; i++) {
+          if (ds.E_t[i] < xMin || ds.E_t[i] > xMax) continue;
+          var py = toY(ds.N_t[i]);
+          if (!isFinite(py) || py < margin.top || py > margin.top + plotH) continue;
+          var px = toX(ds.E_t[i]);
+          if (!started) { ctx.moveTo(px, py); started = true; }
+          else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+
+        // Peak stars
+        if (ds.shallow_E != null) drawStar(ctx, toX(ds.shallow_E), toY(ds.shallow_N), color);
+        if (ds.deep_E != null) drawStar(ctx, toX(ds.deep_E), toY(ds.deep_N), color);
+      });
+
+      // X-axis ticks
+      ctx.fillStyle = "#333333";
+      ctx.textAlign = "center";
+      ctx.font = 'bold 14px "Microsoft YaHei", "SimHei", sans-serif';
+      for (var i = 0; i <= 5; i++) {
+        var vx = xMin + (xMax - xMin) * i / 5;
+        ctx.fillText(vx.toFixed(2), toX(vx), margin.top + plotH + 25);
+      }
+      // X-axis title
+      ctx.font = 'bold 16px "Microsoft YaHei", "SimHei", sans-serif';
+      ctx.fillText("陷阱能级深度 E\u209C (eV)", margin.left + plotW / 2, margin.top + plotH + 60);
+
+      // Y-axis ticks
+      ctx.textAlign = "right";
+      ctx.font = 'bold 14px "Microsoft YaHei", "SimHei", sans-serif';
+      for (var j = 0; j <= 5; j++) {
+        var vy = yMin + (yMax - yMin) * j / 5;
+        ctx.fillText(vy.toExponential(1), margin.left - 12, toY(vy) + 5);
+      }
+      // Y-axis title (rotated)
+      ctx.save();
+      ctx.translate(18, margin.top + plotH / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.textAlign = "center";
+      ctx.font = 'bold 16px "Microsoft YaHei", "SimHei", sans-serif';
+      ctx.fillText("面陷阱密度 N\u209C (eV\u207B\u00B9\u00B7m\u207B\u00B2)", 0, 0);
+      ctx.restore();
+
+      // Title
+      ctx.textAlign = "center";
+      ctx.font = 'bold 18px "Microsoft YaHei", "SimHei", sans-serif';
+      ctx.fillStyle = "#1a1a2e";
+      ctx.fillText("聚合物面陷阱能级分布 (Surface Trap Density)", margin.left + plotW / 2, margin.top - 22);
+
+      // Legend
+      ctx.textAlign = "left";
+      ctx.font = '13px "Microsoft YaHei", "SimHei", sans-serif';
+      var ly = margin.top + 5;
+      datasets.forEach(function(ds, idx) {
+        ctx.fillStyle = colors[idx % colors.length];
+        ctx.fillRect(margin.left + plotW - 280, ly, 16, 16);
+        ctx.fillStyle = "#333333";
+        ctx.fillText(ds.label || ("数据" + (idx + 1)), margin.left + plotW - 258, ly + 13);
+        ly += 24;
+      });
+    }
+  };
+})();

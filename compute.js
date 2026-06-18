@@ -13,7 +13,9 @@ function compute(t, v, T, nu, eps_r, d_um) {
  nu = nu || 1e12;
  eps_r = eps_r || 3.0;
  d_um = d_um || 50;
- var fit = LM.fitDoubleExponential(t, v);
+ var vDrop = v[0] - v[v.length - 1];
+ var tRange = t[t.length - 1] - t[0];
+ var fit = LM.fitDoubleExponential(t, v, vDrop, tRange);
  var A1 = fit.A1, tau1 = fit.tau1, A2 = fit.A2, tau2 = fit.tau2, y0 = fit.y0;
  var r2 = fit.r2;
  var v0 = v[0];

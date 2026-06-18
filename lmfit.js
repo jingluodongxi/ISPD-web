@@ -1,1 +1,204 @@
-var LM=function(){"use strict";function a(a,r){for(var t=new Array(a),e=0;e<a;e++){t[e]=new Array(r);for(var n=0;n<r;n++)t[e][n]=0}return t}function r(r){for(var t=r.length,e=r[0].length,n=a(e,t),o=0;o<t;o++)for(var s=0;s<e;s++)n[s][o]=r[o][s];return n}function t(r,t){for(var e=r.length,n=r[0].length,o=t[0].length,s=a(e,o),f=0;f<e;f++)for(var h=0;h<n;h++)if(0!==r[f][h])for(var i=0;i<o;i++)s[f][i]+=r[f][h]*t[h][i];return s}function e(a,r){for(var t=a.length,e=new Array(t),n=0;n<t;n++){e[n]=new Array(t+1);for(var o=0;o<t;o++)e[n][o]=a[n][o];e[n][t]=Array.isArray(r[n])?r[n][0]:r[n]}for(var s=0;s<t;s++){for(var f=Math.abs(e[s][s]),h=s,i=s+1;i<t;i++)Math.abs(e[i][s])>f&&(f=Math.abs(e[i][s]),h=i);if(!(f<1e-30)){var v=e[s];e[s]=e[h],e[h]=v;for(i=s+1;i<t;i++){var c=e[i][s]/e[s][s];for(o=s;o<=t;o++)e[i][o]-=c*e[s][o]}}}var u=new Array(t);for(n=t-1;n>=0;n--){u[n]=e[n][t];for(o=n+1;o<t;o++)u[n]-=e[n][o]*u[o];u[n]/=Math.abs(e[n][n])>1e-30?e[n][n]:1}return u}function n(n,o,s,f,h,i){for(var v=(i=i||{}).maxIter||200,c=i.lambda0||.01,u=(i.ftol,i.xtol||1e-12),l=s.length,M=h.length,x=h.slice(),b=0,m=0;m<l;m++){b+=(y=f[m]-n(x,s[m]))*y}b/=l;for(var g=0;g<v;g++){var p=a(l,M),y=a(l,1);for(m=0;m<l;m++){var A=o(x,s[m]),w=n(x,s[m]);y[m][0]=f[m]-w;for(var d=0;d<M;d++)p[m][d]=A[d]}var F=r(p),E=t(F,p),I=t(F,y),k=a(M,M);for(d=0;d<M;d++){for(var D=0;D<M;D++)k[d][D]=E[d][D];k[d][d]+=c*Math.max(E[d][d],1e-6)}var J=e(k,I),L=0;for(d=0;d<M;d++)L=Math.max(L,Math.abs(J[d]));var j=new Array(M);for(d=0;d<M;d++)j[d]=x[d]+J[d];var q=0;for(m=0;m<l;m++){var z=f[m]-n(j,s[m]);if(!isFinite(z)){q=1/0;break}q+=z*z}if((q/=l)<b&&isFinite(q)){if(c/=10,b=q,x=j,L<u)return{params:x,success:!0,iterations:g+1,cost:b}}else c*=10}return{params:x,success:!1,iterations:v,cost:b}}function o(a,r){var t=a[0],e=Math.max(Math.abs(a[1]),.1),n=a[2],o=Math.max(Math.abs(a[3]),.1),s=a[4];return t*Math.exp(-r/e)+n*Math.exp(-r/o)+s}function s(a,r){var t=a[0],e=Math.max(Math.abs(a[1]),.1),n=a[2],o=Math.max(Math.abs(a[3]),.1),s=Math.exp(-r/e),f=Math.exp(-r/o);return[s,t*(r/(e*e))*s,f,n*(r/(o*o))*f,1]}return{lmFit:n,doubleExpModel:o,doubleExpJacobian:s,fitDoubleExponential:function(a,r){for(var t=r[0],e=[[.7*t,50,.3*t,500,.05*t],[.5*t,100,.2*t,1e3,0],[.6*t,30,.4*t,300,.02*t],[.8*t,20,.2*t,200,0],[.5*t,50,.5*t,50,.01*t]],f=null,h=1/0,i=0;i<e.length;i++)try{var v=n(o,s,a,r,e[i],{maxIter:300,lambda0:.01,ftol:1e-14,xtol:1e-14});v.cost<h&&isFinite(v.cost)&&(h=v.cost,f=v)}catch(a){}f||(f={params:c=e[0].slice(),success:!1,iterations:0,cost:0});for(var c,u=(c=f.params)[0],l=Math.max(Math.abs(c[1]),.1),M=c[2],x=Math.max(Math.abs(c[3]),.1),b=c[4],m=0,g=0,p=0,y=0;y<r.length;y++)p+=r[y];for(p/=r.length,y=0;y<r.length;y++){var A=o(c,a[y]),w=r[y]-A;m+=w*w;var d=r[y]-p;g+=d*d}return{A1:u,tau1:l,A2:M,tau2:x,y0:b,r2:Math.max(0,1-m/(g||1)),success:f.success}}}}();
+﻿
+var LM = (function() {
+'use strict';
+function zeros(rows, cols) {
+ var m = new Array(rows);
+ for (var i = 0; i < rows; i++) {
+ m[i] = new Array(cols);
+ for (var j = 0; j < cols; j++) m[i][j] = 0;
+ }
+ return m;
+}
+function transpose(A) {
+ var rows = A.length, cols = A[0].length;
+ var T = zeros(cols, rows);
+ for (var i = 0; i < rows; i++)
+ for (var j = 0; j < cols; j++)
+ T[j][i] = A[i][j];
+ return T;
+}
+function matMul(A, B) {
+ var aRows = A.length, aCols = A[0].length;
+ var bCols = B[0].length;
+ var C = zeros(aRows, bCols);
+ for (var i = 0; i < aRows; i++)
+ for (var k = 0; k < aCols; k++)
+ if (A[i][k] !== 0)
+ for (var j = 0; j < bCols; j++)
+ C[i][j] += A[i][k] * B[k][j];
+ return C;
+}
+function solve(A, b) {
+ var n = A.length;
+ var aug = new Array(n);
+ for (var i = 0; i < n; i++) {
+ aug[i] = new Array(n + 1);
+ for (var j = 0; j < n; j++) aug[i][j] = A[i][j];
+ aug[i][n] = (Array.isArray(b[i])) ? b[i][0] : b[i];
+ }
+ for (var col = 0; col < n; col++) {
+ var maxVal = Math.abs(aug[col][col]);
+ var maxRow = col;
+ for (var row = col + 1; row < n; row++) {
+ if (Math.abs(aug[row][col]) > maxVal) {
+ maxVal = Math.abs(aug[row][col]);
+ maxRow = row;
+ }
+ }
+ if (maxVal < 1e-30) continue;
+ var tmp = aug[col]; aug[col] = aug[maxRow]; aug[maxRow] = tmp;
+ for (var row = col + 1; row < n; row++) {
+ var factor = aug[row][col] / aug[col][col];
+ for (var j = col; j <= n; j++) {
+ aug[row][j] -= factor * aug[col][j];
+ }
+ }
+ }
+ var x = new Array(n);
+ for (var i = n - 1; i >= 0; i--) {
+ x[i] = aug[i][n];
+ for (var j = i + 1; j < n; j++) {
+ x[i] -= aug[i][j] * x[j];
+ }
+ x[i] /= (Math.abs(aug[i][i]) > 1e-30) ? aug[i][i] : 1;
+ }
+ return x;
+}
+function lmFit(modelFn, jacFn, xData, yData, p0, options) {
+ options = options || {};
+ var maxIter = options.maxIter || 200;
+ var lambda = options.lambda0 || 1e-2;
+ var ftol = options.ftol || 1e-12;
+ var xtol = options.xtol || 1e-12;
+ var lambdaUp = 10, lambdaDown = 10;
+ var n = xData.length;
+ var m = p0.length;
+ var params = p0.slice();
+ var cost = 0;
+ for (var i = 0; i < n; i++) {
+ var r = yData[i] - modelFn(params, xData[i]);
+ cost += r * r;
+ }
+ cost /= n;
+ for (var iter = 0; iter < maxIter; iter++) {
+ var J = zeros(n, m);
+ var r = zeros(n, 1);
+ for (var i = 0; i < n; i++) {
+ var jacRow = jacFn(params, xData[i]);
+ var yPred = modelFn(params, xData[i]);
+ r[i][0] = yData[i] - yPred;
+ for (var j = 0; j < m; j++) {
+ J[i][j] = jacRow[j];
+ }
+ }
+ var JT = transpose(J);
+ var JTJ = matMul(JT, J);
+ var JTr = matMul(JT, r);
+ var A = zeros(m, m);
+ for (var j = 0; j < m; j++) {
+ for (var k = 0; k < m; k++) {
+ A[j][k] = JTJ[j][k];
+ }
+ A[j][j] += lambda * Math.max(JTJ[j][j], 1e-6);
+ }
+ var dp = solve(A, JTr);
+ var maxDp = 0;
+ for (var j = 0; j < m; j++) maxDp = Math.max(maxDp, Math.abs(dp[j]));
+ var newParams = new Array(m);
+ for (var j = 0; j < m; j++) newParams[j] = params[j] + dp[j];
+ var newCost = 0;
+ for (var i = 0; i < n; i++) {
+ var nr = yData[i] - modelFn(newParams, xData[i]);
+ if (!isFinite(nr)) { newCost = Infinity; break; }
+ newCost += nr * nr;
+ }
+ newCost /= n;
+ if (newCost < cost && isFinite(newCost)) {
+ lambda /= lambdaDown;
+ cost = newCost;
+ params = newParams;
+ if (maxDp < xtol) {
+ return { params: params, success: true, iterations: iter + 1, cost: cost };
+ }
+ } else {
+ lambda *= lambdaUp;
+ }
+ }
+ return { params: params, success: false, iterations: maxIter, cost: cost };
+}
+function doubleExpModel(params, t) {
+ var A1 = params[0], tau1 = Math.max(Math.abs(params[1]), 0.1);
+ var A2 = params[2], tau2 = Math.max(Math.abs(params[3]), 0.1);
+ var y0 = params[4];
+ return A1 * Math.exp(-t / tau1) + A2 * Math.exp(-t / tau2) + y0;
+}
+function doubleExpJacobian(params, t) {
+ var A1 = params[0], tau1 = Math.max(Math.abs(params[1]), 0.1);
+ var A2 = params[2], tau2 = Math.max(Math.abs(params[3]), 0.1);
+ var e1 = Math.exp(-t / tau1);
+ var e2 = Math.exp(-t / tau2);
+ return [
+ e1,
+ A1 * (t / (tau1 * tau1)) * e1,
+ e2,
+ A2 * (t / (tau2 * tau2)) * e2,
+ 1
+ ];
+}
+function fitDoubleExponential(t, v, vDrop, tRange) {
+ vDrop = vDrop || (v[0] - v[v.length - 1]);
+ tRange = tRange || (t[t.length - 1] - t[0]);
+ var vEnd = v[v.length - 1];
+ var p0Sets = [
+ [vDrop * 0.6, tRange * 0.1, vDrop * 0.3, tRange * 0.5, vEnd],
+ [vDrop * 0.5, tRange * 0.05, vDrop * 0.4, tRange * 0.3, vEnd],
+ [vDrop * 0.7, tRange * 0.15, vDrop * 0.2, tRange * 0.8, vEnd],
+ [vDrop * 0.4, tRange * 0.02, vDrop * 0.5, tRange * 0.2, vEnd],
+ [vDrop * 0.3, tRange * 0.08, vDrop * 0.6, tRange * 0.6, vEnd]
+ ];
+ var tauMax = 20 * tRange;
+ var AMax = 5 * Math.max(vDrop, 0.01);
+ var bestResult = null;
+ var bestCost = Infinity;
+ for (var k = 0; k < p0Sets.length; k++) {
+ try {
+ var result = lmFit(doubleExpModel, doubleExpJacobian, t, v, p0Sets[k], {
+ maxIter: 300, lambda0: 1e-2, ftol: 1e-14, xtol: 1e-14
+ });
+ if (result.cost < bestCost && isFinite(result.cost)) {
+ bestCost = result.cost;
+ bestResult = result;
+ }
+ } catch(e) {}
+ }
+ if (!bestResult) {
+ var p = p0Sets[0].slice();
+ bestResult = { params: p, success: false, iterations: 0, cost: 0 };
+ }
+ var p = bestResult.params;
+ var A1 = Math.max(0, Math.min(p[0], AMax));
+ var tau1 = Math.max(0.1, Math.min(Math.abs(p[1]), tauMax));
+ var A2 = Math.max(0, Math.min(p[2], AMax));
+ var tau2 = Math.max(0.1, Math.min(Math.abs(p[3]), tauMax));
+ var y0 = Math.max(vEnd - vDrop, Math.min(p[4], vEnd + vDrop));
+ var ssRes = 0, ssTot = 0;
+ var vMean = 0;
+ for (var i = 0; i < v.length; i++) vMean += v[i];
+ vMean /= v.length;
+ for (var i = 0; i < v.length; i++) {
+ var pred = doubleExpModel([A1, tau1, A2, tau2, y0], t[i]);
+ var resid = v[i] - pred;
+ ssRes += resid * resid;
+ var dev = v[i] - vMean;
+ ssTot += dev * dev;
+ }
+ var r2 = Math.max(0, 1 - ssRes / (ssTot || 1));
+ return { A1: A1, tau1: tau1, A2: A2, tau2: tau2, y0: y0, r2: r2, success: bestResult.success };
+}
+return {
+ lmFit: lmFit,
+ doubleExpModel: doubleExpModel,
+ doubleExpJacobian: doubleExpJacobian,
+ fitDoubleExponential: fitDoubleExponential
+};
+})();

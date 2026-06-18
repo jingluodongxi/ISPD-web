@@ -6,7 +6,7 @@ function drawVtChart(canvas, seriesData, colors) {
   var ctx = canvas.getContext('2d');
   var dpr = window.devicePixelRatio || 1;
   var rect = canvas.parentElement.getBoundingClientRect();
-  var W = rect.width || 900;
+  var W = (rect.width > 100) ? rect.width : 900;
   canvas.width = W * dpr;
   canvas.height = 600 * dpr;
   canvas.style.width = W + 'px';
@@ -59,10 +59,11 @@ function drawVtChart(canvas, seriesData, colors) {
       ctx.beginPath(); ctx.arc(toX(s.tLog[k]), toY(s.vRaw[k]), 3, 0, 2 * Math.PI); ctx.fill();
     }
     ctx.globalAlpha = 1;
-    ctx.strokeStyle = c; ctx.lineWidth = 2; ctx.beginPath();
+    ctx.strokeStyle = c; ctx.lineWidth = 2.5; ctx.beginPath();
     var first = true;
     for (var k = 0; k < s.tLogDense.length; k++) {
       var px = toX(s.tLogDense[k]), py = toY(s.vDense[k]);
+      if (!isFinite(px) || !isFinite(py)) { continue; }
       if (first) { ctx.moveTo(px, py); first = false; } else ctx.lineTo(px, py);
     }
     ctx.stroke();
@@ -114,7 +115,7 @@ function drawEtNtChart(canvas, seriesData, colors) {
   var ctx = canvas.getContext('2d');
   var dpr = window.devicePixelRatio || 1;
   var rect = canvas.parentElement.getBoundingClientRect();
-  var W = rect.width || 900;
+  var W = (rect.width > 100) ? rect.width : 900;
   canvas.width = W * dpr;
   canvas.height = 600 * dpr;
   canvas.style.width = W + 'px';

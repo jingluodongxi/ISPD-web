@@ -155,13 +155,13 @@ document.getElementById('btn-compute').addEventListener('click', function() {
 
     // Draw V-t chart
     var canvas1 = document.getElementById('chart1-canvas');
-    ChartRenderer.drawVtChart(canvas1, vtSeries, colors);
     canvas1.style.display = 'block';
+    ChartRenderer.drawVtChart(canvas1, vtSeries, colors);
 
     // Draw Et-Nt chart
     var canvas2 = document.getElementById('chart2-canvas');
-    ChartRenderer.drawEtNtChart(canvas2, etntSeries, colors);
     canvas2.style.display = 'block';
+    ChartRenderer.drawEtNtChart(canvas2, etntSeries, colors);
 
     // Render table
     renderTable();

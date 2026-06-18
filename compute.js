@@ -19,7 +19,7 @@ function compute(t, v, T, nu, eps_r, d_um) {
     var maxTau = Math.max(Math.abs(tau1), Math.abs(tau2));
     tMax = Math.max(tMax, maxTau * 4.605);
   }
-  tMax = Math.min(tMax, (t[t.length - 1] || 1) * 1000);
+  tMax = Math.min(tMax, (t[t.length - 1] || 1) * 10);
 
   var nD = 1000, logMin = Math.log10(tMin), logMax = Math.log10(tMax);
   var tDense = new Array(nD), vDense = new Array(nD);

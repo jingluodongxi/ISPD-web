@@ -1,0 +1,141 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ISPD表面电位分析系统</title>
+<link rel="stylesheet" href="style.css">
+<!-- SheetJS - bundled locally -->
+<script src="xlsx.full.min.js"></script>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="loading-overlay">
+    <div class="spinner"></div>
+    <p id="loading-text"></p>
+</div>
+
+<!-- Main App -->
+<div id="app">
+    <!-- ===== Left Panel ===== -->
+    <div id="left-panel">
+        
+        <!-- 1. Data -->
+        <div class="group-box">
+            <div class="group-box-title">1. 实验数据挂载</div>
+            <div class="radio-group">
+                <label><input type="radio" name="mode" id="radio-single"> 单曲线分析</label>
+                <label><input type="radio" name="mode" id="radio-multi" checked> 多曲线对比</label>
+            </div>
+            <label class="btn" id="btn-import" style="width:100%; cursor:pointer; display:block; text-align:center;">
+                📂 导入实验数据
+                <input type="file" id="file-input" accept=".csv,.xlsx,.xls" multiple style="position:absolute;opacity:0;width:0;height:0;">
+            </label>
+            <ul id="file-list"></ul>
+        </div>
+
+        <!-- 2. Physical Parameters -->
+        <div class="group-box">
+            <div class="group-box-title">2. 物理环境参数 (严谨二维模型)</div>
+            <div class="form-row">
+                <label>测试温度 T (K):</label>
+                <input type="number" id="input-T" value="300" step="1">
+            </div>
+            <div class="form-row">
+                <label>逃逸频率 ν:</label>
+                <select id="combo-nu">
+                    <option value="1e11">1.0 × 10¹¹ s⁻¹</option>
+                    <option value="1e12" selected>1.0 × 10¹² s⁻¹</option>
+                    <option value="1e13">1.0 × 10¹³ s⁻¹</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <label>相对介电常数 ε<sub>r</sub>:</label>
+                <input type="number" id="input-epsr" value="3.0" step="0.1">
+            </div>
+            <div class="form-row">
+                <label>绝缘体厚度 d (μm):</label>
+                <input type="number" id="input-d" value="50" step="1">
+            </div>
+        </div>
+
+        <!-- 3. Model Info -->
+        <div class="group-box">
+            <div class="group-box-title">3. 核心物理机制与解析方程</div>
+            <div class="model-info">
+                <div class="formula"><i>V(t) = A<sub>1</sub> e<sup> -t / τ<sub>1</sub></sup> + A<sub>2</sub> e<sup> -t / τ<sub>2</sub></sup> + y<sub>0</sub></i></div>
+                <hr>
+                <b>• 浅陷阱（物理缺陷）</b><br>&nbsp;&nbsp;对应快速衰减项，特征参量为 <b>A<sub>1</sub></b> 与 <b>τ<sub>1</sub></b><br>
+                <b>• 深陷阱（化学缺陷）</b><br>&nbsp;&nbsp;对应慢速衰减项，特征参量为 <b>A<sub>2</sub></b> 与 <b>τ<sub>2</sub></b>
+            </div>
+        </div>
+
+        <!-- 4. Compute Button -->
+        <button class="btn btn-primary" id="btn-compute">⚡ 运行物理反演 (提取深/浅陷阱参数)</button>
+    </div>
+
+    <!-- ===== Right Panel ===== -->
+    <div id="right-panel">
+        <!-- Tab Bar -->
+        <div class="tab-bar">
+            <button class="tab-btn active" data-tab="0">【1】 表面电位等温衰减动力学 (V-t)</button>
+            <button class="tab-btn" data-tab="1">【2】 聚合物面陷阱能带谱 (Nst-Et)</button>
+            <button class="tab-btn" data-tab="2">【3】 核心反演特征参数汇总库</button>
+        </div>
+
+        <!-- Tab 1: V-t chart -->
+        <div class="tab-content active" id="tab-content-0">
+            <div class="toolbar">
+                <button class="tbtn" id="tbtn-save1">💾 导出图表</button>
+                <button class="tbtn" id="tbtn-clear1">🧹 清空图表</button>
+                <span class="coord-label">【就绪】</span>
+            </div>
+            <div class="chart-container" id="chart1-container">
+                <canvas id="chart1-canvas" style="display:none;max-width:100%;height:auto;"></canvas>
+            </div>
+        </div>
+
+        <!-- Tab 2: Et-Nt chart -->
+        <div class="tab-content" id="tab-content-1">
+            <div class="toolbar">
+                <button class="tbtn" id="tbtn-save2">💾 导出图表</button>
+                <button class="tbtn" id="tbtn-clear2">🧹 清空图表</button>
+                <span class="coord-label">【就绪】</span>
+            </div>
+            <div class="chart-container" id="chart2-container">
+                <canvas id="chart2-canvas" style="display:none;max-width:100%;height:auto;"></canvas>
+            </div>
+        </div>
+
+        <!-- Tab 3: Table -->
+        <div class="tab-content" id="tab3-content">
+            <button class="btn" id="btn-export" style="margin-bottom:8px">💾 导出本表格至 CSV</button>
+            <div class="table-wrap">
+                <table id="result-table">
+                    <thead>
+                        <tr>
+                            <th>数据标识</th><th>拟合优度 R²</th><th>V0 (V)</th>
+                            <th>浅陷阱峰深度(eV)</th><th>浅陷阱面密度(m⁻²)</th>
+                            <th>深陷阱峰深度(eV)</th><th>深陷阱面密度(m⁻²)</th>
+                            <th>幅值 A1 (V)</th><th>弛豫时间 τ1 (s)</th>
+                            <th>幅值 A2 (V)</th><th>弛豫时间 τ2 (s)</th><th>残余电位 y0 (V)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="result-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Status Bar -->
+        <div id="status-bar">系统就绪：采用双指数拟合与面陷阱密度解析模型。</div>
+    </div>
+</div>
+
+<script src="lmfit.js"></script>
+<script src="peaks.js"></script>
+<script src="compute.js"></script>
+<script src="chart.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

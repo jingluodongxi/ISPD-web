@@ -283,7 +283,7 @@
       var ly = margin.top + 5;
       datasets.forEach(function(ds, idx) {
         ctx.fillStyle = colors[idx % colors.length];
-        ctx.fillRect(margin.left + 10, ly, 16, 16), ly, 16, 16);
+        ctx.fillRect(margin.left + 10, ly, 16, 16);
         ctx.fillStyle = "#333333";
         ctx.fillText(ds.label || ("数据" + (idx + 1)), margin.left + 32, ly + 13);
         ly += 24;

@@ -1,1 +1,223 @@
-﻿ var COLOR_PALETTE=['#005FB8','#D95319','#EDB120','#7E2F8E','#77AC30','#4DBEEE','#A2142F','#000000'];var datasets={};var colorIndex=0;var allResults=[];(function _i(){document.getElementById('loading-overlay').classList.add('hidden');showStatus('系统就绪：采用双指数拟合与面陷阱密度解析模型。请导入数据并点击运行。');})();document.getElementById('file-input').addEventListener('change',function(e){var _e=Array.from(e.target._e);if(_e.length===0)return;var _1=document.getElementById('radio-single').checked;if(_1){datasets={};colorIndex=0;document.getElementById('file-list').innerHTML='';}_e.forEach(function(file){if(datasets[file.name])return;var _9=new FileReader();_9.onload=function(evt){try{var _n=new Uint8Array(evt.target._a);var _3=XLSX.read(_n,{type:'array'});var _2=_3.SheetNames[0];var _b=_3.Sheets[_2];var _4=XLSX.utils.sheet_to_json(_b,{header:1,defval:null});var _o=_4.filter(function(r){return r&&r.length>=2;});var _5=0;if(_o.length>0&&typeof _o[0][0]==='string'&&isNaN(parseFloat(_o[0][0]))){_5=1;}var t=[],v=[];for(var k=_5;k<_o.length;k++){var _s=parseFloat(_o[k][0]);var _t=parseFloat(_o[k][1]);if(!isNaN(_s)&&isFinite(_s)&&!isNaN(_t)&&isFinite(_t)){t.push(_s);v.push(_t);}}if(t.length<3){showStatus(file.name+' 解析失败:有效数据点不足（需要>=3）','error');return;}var _f=COLOR_PALETTE[colorIndex % COLOR_PALETTE.length];colorIndex++;datasets[file.name]={t:t,v:v,_f:_f};addFileItem(file.name,_f);showStatus('已挂载:'+file.name+'('+t.length+' 个数据点)');}catch(err){showStatus(file.name+' 解析失败:'+err.message,'error');}};_9.readAsArrayBuffer(file);});e.target.value='';});function addFileItem(name,_f){var _x=document.createElement('_x');_x.innerHTML='<_l class="dot" style="background:'+_f+'"></_l>'+'<input type="checkbox" checked>'+'<_l style="flex:1">'+name+'</_l>';document.getElementById('file-list').appendChild(_x);}document.querySelectorAll('input[name="mode"]').forEach(function(r){r.addEventListener('change',function(){if(document.getElementById('radio-single').checked){document.getElementById('file-list').innerHTML='';datasets={};colorIndex=0;}});});document.getElementById('btn-compute').addEventListener('click',function(){var _g=document.querySelectorAll('#file-list _x');var _0=[];_g.forEach(function(_x){var _w=_x.querySelector('input[type="checkbox"]');var _l=_x.querySelector('_l:last-child');if(_w&&_w.checked&&_l)_0.push(_l.textContent);});if(_0.length===0){showStatus('请在列表中至少勾选一个数据文件！','warn');return;}try{var T=parseFloat(document.getElementById('input-T').value)||300;var _r=parseFloat(document.getElementById('combo-_r').value)||1e12;var _d=parseFloat(document.getElementById('input-epsr').value)||3.0;var _j=parseFloat(document.getElementById('input-d').value)||50;showStatus('正在运行双指数解析与陷阱参数识别计算...');allResults=[];var _6=[],etntSeries=[],colors=[];_0.forEach(function(name){var _y=datasets[name];if(!_y)return;var _a=ISPD.compute(_y.t,_y.v,T,_r,_d,_j);_a.filename=name;_a._f=_y._f;allResults.push(_a);colors.push(_y._f);_6.push({tLog:_a.tLog,vRaw:_a.vRaw,tLogDense:_a.tLogDense,vDense:_a.vDense,label:name+'(R²='+_a.r2.toFixed(4)+')'});etntSeries.push({E_t:_a.E_t,N_t:_a.N_t,shallow_E:_a.shallow_E,shallow_N:_a.shallow_N,deep_E:_a.deep_E,deep_N:_a.deep_N,label:name});});var _7=document.getElementById('chart1-canvas');_7.style.display='block';ChartRenderer.drawVtChart(_7,_6,colors);var _8=document.getElementById('chart2-canvas');_8.style.display='block';ChartRenderer.drawEtNtChart(_8,etntSeries,colors);renderTable();switchTab(1);showStatus('解析成功！已从 '+_0.length+' 组曲线中提取出完整的多维物理特征库。');}catch(err){showStatus('运行异常:'+err.message,'error');console.error(err);}});function renderTable(){var _c=document.getElementById('_a-_c');_c.innerHTML='';allResults.forEach(function(r){var _q=document.createElement('_q');_q.innerHTML='<td>'+r.filename+'</td>'+'<td>'+r.r2.toFixed(4)+'</td>'+'<td>'+r.v0.toFixed(2)+'</td>'+'<td>'+(r.shallow_E!=null?r.shallow_E.toFixed(4):'-')+'</td>'+'<td>'+(r.shallow_N!=null?r.shallow_N.toExponential(2):'-')+'</td>'+'<td>'+(r.deep_E!=null?r.deep_E.toFixed(4):'-')+'</td>'+'<td>'+(r.deep_N!=null?r.deep_N.toExponential(2):'-')+'</td>'+'<td>'+r.A1.toFixed(2)+'</td>'+'<td>'+r.tau1.toFixed(2)+'</td>'+'<td>'+r.A2.toFixed(2)+'</td>'+'<td>'+r.tau2.toFixed(2)+'</td>'+'<td>'+r.y0.toFixed(2)+'</td>';_c.appendChild(_q);});}function switchTab(idx){document.querySelectorAll('.tab-btn').forEach(function(b,i){b.classList.toggle('active',i===idx);});document.getElementById('tab-content-0').classList.toggle('active',idx===0);document.getElementById('tab-content-1').classList.toggle('active',idx===1);document.getElementById('tab3-content').classList.toggle('active',idx===2);}document.querySelectorAll('.tab-btn').forEach(function(b){b.addEventListener('click',function(){switchTab(parseInt(this.dataset.tab));});});document.getElementById('btn-export').addEventListener('click',function(){if(allResults.length===0){showStatus('表格中无数据可导出！','warn');return;}var _p='数据标识,拟合优度 R²,V0(V),浅陷阱峰深度(eV),浅陷阱面密度(m⁻²),深陷阱峰深度(eV),深陷阱面密度(m⁻²),幅值 A1(V),弛豫时间 τ1(s),幅值 A2(V),弛豫时间 τ2(s),残余电位 y0(V)\n';allResults.forEach(function(r){_p+=[r.filename,r.r2.toFixed(4),r.v0.toFixed(2),r.shallow_E!=null?r.shallow_E.toFixed(4):'-',r.shallow_N!=null?r.shallow_N.toExponential(2):'-',r.deep_E!=null?r.deep_E.toFixed(4):'-',r.deep_N!=null?r.deep_N.toExponential(2):'-',r.A1.toFixed(2),r.tau1.toFixed(2),r.A2.toFixed(2),r.tau2.toFixed(2),r.y0.toFixed(2)].join(',')+'\n';});var _k=new Blob(['\uFEFF'+_p],{type:'text/_p;charset=utf-8'});var a=document.createElement('a');a.href=URL.createObjectURL(_k);a.download='ISPD_Physics_Parameters._p';a.click();});document.getElementById('tbtn-save1').addEventListener('click',function(){var canvas=document.getElementById('chart1-canvas');var a=document.createElement('a');a.href=canvas.toDataURL('image/png');a.download='ISPD_Vt_Chart.png';a.click();});document.getElementById('tbtn-save2').addEventListener('click',function(){var canvas=document.getElementById('chart2-canvas');var a=document.createElement('a');a.href=canvas.toDataURL('image/png');a.download='ISPD_EtNt_Chart.png';a.click();});function clearCharts(){var _v=document.getElementById('chart1-canvas');var _z=document.getElementById('chart2-canvas');var _h=_v.getContext('2d');var _m=_z.getContext('2d');_h.clearRect(0,0,_v.width,_v.height);_m.clearRect(0,0,_z.width,_z.height);_v.style.display='none';_z.style.display='none';document.getElementById('_a-_c').innerHTML='';allResults=[];showStatus('图表与特征数据已清空。');}document.getElementById('tbtn-clear1').addEventListener('click',clearCharts);document.getElementById('tbtn-clear2').addEventListener('click',clearCharts);function showStatus(msg,type){var _u=document.getElementById('status-bar');_u.textContent=msg;_u.style._f=type==='error'?'#D95319':type==='warn'?'#EDB120':'#475569';}
+﻿
+var COLOR_PALETTE = ['#005FB8','#D95319','#EDB120','#7E2F8E','#77AC30','#4DBEEE','#A2142F','#000000'];
+var datasets = {};
+var colorIndex = 0;
+var allResults = [];
+(function init() {
+ document.getElementById('loading-overlay').classList.add('hidden');
+ showStatus('系统就绪：采用双指数拟合与面陷阱密度解析模型。请导入数据并点击运行。');
+})();
+document.getElementById('file-input').addEventListener('change', function(e) {
+ var files = Array.from(e.target.files);
+ if (files.length === 0) return;
+ var singleMode = document.getElementById('radio-single').checked;
+ if (singleMode) {
+ datasets = {}; colorIndex = 0;
+ document.getElementById('file-list').innerHTML = '';
+ }
+ files.forEach(function(file) {
+ if (datasets[file.name]) return;
+ var reader = new FileReader();
+ reader.onload = function(evt) {
+ try {
+ var data = new Uint8Array(evt.target.result);
+ var workbook = XLSX.read(data, { type: 'array' });
+ var sheetName = workbook.SheetNames[0];
+ var sheet = workbook.Sheets[sheetName];
+ var jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null });
+ var rows = jsonData.filter(function(r) { return r && r.length >= 2; });
+ var startRow = 0;
+ if (rows.length > 0 && typeof rows[0][0] === 'string' && isNaN(parseFloat(rows[0][0]))) {
+ startRow = 1;
+ }
+ var t = [], v = [];
+ for (var k = startRow; k < rows.length; k++) {
+ var tv = parseFloat(rows[k][0]);
+ var vv = parseFloat(rows[k][1]);
+ if (!isNaN(tv) && isFinite(tv) && !isNaN(vv) && isFinite(vv)) {
+ t.push(tv);
+ v.push(vv);
+ }
+ }
+ if (t.length < 3) {
+ showStatus(file.name + ' 解析失败: 有效数据点不足（需要 >= 3）', 'error');
+ return;
+ }
+ var color = COLOR_PALETTE[colorIndex % COLOR_PALETTE.length];
+ colorIndex++;
+ datasets[file.name] = { t: t, v: v, color: color };
+ addFileItem(file.name, color);
+ showStatus('已挂载: ' + file.name + ' (' + t.length + ' 个数据点)');
+ } catch (err) {
+ showStatus(file.name + ' 解析失败: ' + err.message, 'error');
+ }
+ };
+ reader.readAsArrayBuffer(file);
+ });
+ e.target.value = '';
+});
+function addFileItem(name, color) {
+ var li = document.createElement('li');
+ li.innerHTML = '<span class="dot" style="background:' + color + '"></span>' +
+ '<input type="checkbox" checked>' +
+ '<span style="flex:1">' + name + '</span>';
+ document.getElementById('file-list').appendChild(li);
+}
+document.querySelectorAll('input[name="mode"]').forEach(function(r) {
+ r.addEventListener('change', function() {
+ if (document.getElementById('radio-single').checked) {
+ document.getElementById('file-list').innerHTML = '';
+ datasets = {}; colorIndex = 0;
+ }
+ });
+});
+document.getElementById('btn-compute').addEventListener('click', function() {
+ var items = document.querySelectorAll('#file-list li');
+ var checkedNames = [];
+ items.forEach(function(li) {
+ var cb = li.querySelector('input[type="checkbox"]');
+ var span = li.querySelector('span:last-child');
+ if (cb && cb.checked && span) checkedNames.push(span.textContent);
+ });
+ if (checkedNames.length === 0) {
+ showStatus('请在列表中至少勾选一个数据文件！', 'warn');
+ return;
+ }
+ try {
+ var T = parseFloat(document.getElementById('input-T').value) || 300;
+ var nu = parseFloat(document.getElementById('combo-nu').value) || 1e12;
+ var eps_r = parseFloat(document.getElementById('input-epsr').value) || 3.0;
+ var d_um = parseFloat(document.getElementById('input-d').value) || 50;
+ showStatus('正在运行双指数解析与陷阱参数识别计算...');
+ allResults = [];
+ var vtSeries = [], etntSeries = [], colors = [];
+ checkedNames.forEach(function(name) {
+ var ds = datasets[name];
+ if (!ds) return;
+ var result = ISPD.compute(ds.t, ds.v, T, nu, eps_r, d_um);
+ result.filename = name;
+ result.color = ds.color;
+ allResults.push(result);
+ colors.push(ds.color);
+ vtSeries.push({
+ tLog: result.tLog,
+ vRaw: result.vRaw,
+ tLogDense: result.tLogDense,
+ vDense: result.vDense,
+ label: name + ' (R²=' + result.r2.toFixed(4) + ')'
+ });
+ etntSeries.push({
+ E_t: result.E_t,
+ N_t: result.N_t,
+ shallow_E: result.shallow_E,
+ shallow_N: result.shallow_N,
+ deep_E: result.deep_E,
+ deep_N: result.deep_N,
+ label: name
+ });
+ });
+ var canvas1 = document.getElementById('chart1-canvas');
+ canvas1.style.display = 'block';
+ ChartRenderer.drawVtChart(canvas1, vtSeries, colors);
+ var canvas2 = document.getElementById('chart2-canvas');
+ canvas2.style.display = 'block';
+ ChartRenderer.drawEtNtChart(canvas2, etntSeries, colors);
+ renderTable();
+ switchTab(1);
+ showStatus('解析成功！已从 ' + checkedNames.length + ' 组曲线中提取出完整的多维物理特征库。');
+ } catch (err) {
+ showStatus('运行异常: ' + err.message, 'error');
+ console.error(err);
+ }
+});
+function renderTable() {
+ var tbody = document.getElementById('result-tbody');
+ tbody.innerHTML = '';
+ allResults.forEach(function(r) {
+ var tr = document.createElement('tr');
+ tr.innerHTML = '<td>' + r.filename + '</td>' +
+ '<td>' + r.r2.toFixed(4) + '</td>' +
+ '<td>' + r.v0.toFixed(2) + '</td>' +
+ '<td>' + (r.shallow_E != null ? r.shallow_E.toFixed(4) : '-') + '</td>' +
+ '<td>' + (r.shallow_N != null ? r.shallow_N.toExponential(2) : '-') + '</td>' +
+ '<td>' + (r.deep_E != null ? r.deep_E.toFixed(4) : '-') + '</td>' +
+ '<td>' + (r.deep_N != null ? r.deep_N.toExponential(2) : '-') + '</td>' +
+ '<td>' + r.A1.toFixed(2) + '</td>' +
+ '<td>' + r.tau1.toFixed(2) + '</td>' +
+ '<td>' + r.A2.toFixed(2) + '</td>' +
+ '<td>' + r.tau2.toFixed(2) + '</td>' +
+ '<td>' + r.y0.toFixed(2) + '</td>';
+ tbody.appendChild(tr);
+ });
+}
+function switchTab(idx) {
+ document.querySelectorAll('.tab-btn').forEach(function(b, i) {
+ b.classList.toggle('active', i === idx);
+ });
+ document.getElementById('tab-content-0').classList.toggle('active', idx === 0);
+ document.getElementById('tab-content-1').classList.toggle('active', idx === 1);
+ document.getElementById('tab3-content').classList.toggle('active', idx === 2);
+}
+document.querySelectorAll('.tab-btn').forEach(function(b) {
+ b.addEventListener('click', function() {
+ switchTab(parseInt(this.dataset.tab));
+ });
+});
+document.getElementById('btn-export').addEventListener('click', function() {
+ if (allResults.length === 0) {
+ showStatus('表格中无数据可导出！', 'warn');
+ return;
+ }
+ var csv = '数据标识,拟合优度 R²,V0 (V),浅陷阱峰深度(eV),浅陷阱面密度(m⁻²),深陷阱峰深度(eV),深陷阱面密度(m⁻²),幅值 A1 (V),弛豫时间 τ1 (s),幅值 A2 (V),弛豫时间 τ2 (s),残余电位 y0 (V)\n';
+ allResults.forEach(function(r) {
+ csv += [
+ r.filename, r.r2.toFixed(4), r.v0.toFixed(2),
+ r.shallow_E != null ? r.shallow_E.toFixed(4) : '-',
+ r.shallow_N != null ? r.shallow_N.toExponential(2) : '-',
+ r.deep_E != null ? r.deep_E.toFixed(4) : '-',
+ r.deep_N != null ? r.deep_N.toExponential(2) : '-',
+ r.A1.toFixed(2), r.tau1.toFixed(2),
+ r.A2.toFixed(2), r.tau2.toFixed(2),
+ r.y0.toFixed(2)
+ ].join(',') + '\n';
+ });
+ var blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+ var a = document.createElement('a');
+ a.href = URL.createObjectURL(blob);
+ a.download = 'ISPD_Physics_Parameters.csv';
+ a.click();
+});
+document.getElementById('tbtn-save1').addEventListener('click', function() {
+ var canvas = document.getElementById('chart1-canvas');
+ var a = document.createElement('a');
+ a.href = canvas.toDataURL('image/png');
+ a.download = 'ISPD_Vt_Chart.png';
+ a.click();
+});
+document.getElementById('tbtn-save2').addEventListener('click', function() {
+ var canvas = document.getElementById('chart2-canvas');
+ var a = document.createElement('a');
+ a.href = canvas.toDataURL('image/png');
+ a.download = 'ISPD_EtNt_Chart.png';
+ a.click();
+});
+function clearCharts() {
+ var c1 = document.getElementById('chart1-canvas');
+ var c2 = document.getElementById('chart2-canvas');
+ var ctx1 = c1.getContext('2d');
+ var ctx2 = c2.getContext('2d');
+ ctx1.clearRect(0, 0, c1.width, c1.height);
+ ctx2.clearRect(0, 0, c2.width, c2.height);
+ c1.style.display = 'none';
+ c2.style.display = 'none';
+ document.getElementById('result-tbody').innerHTML = '';
+ allResults = [];
+ showStatus('图表与特征数据已清空。');
+}
+document.getElementById('tbtn-clear1').addEventListener('click', clearCharts);
+document.getElementById('tbtn-clear2').addEventListener('click', clearCharts);
+function showStatus(msg, type) {
+ var el = document.getElementById('status-bar');
+ el.textContent = msg;
+ el.style.color = type === 'error' ? '#D95319' : type === 'warn' ? '#EDB120' : '#475569';
+}

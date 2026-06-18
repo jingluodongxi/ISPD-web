@@ -87,86 +87,69 @@ function doubleExpJac(p,t){
   var e1=Math.exp(-t/t1),e2=Math.exp(-t/t2);
   return[e1,A1*(t/(t1*t1))*e1,e2,A2*(t/(t2*t2))*e2,1];
 }
-function singleExpModel(p,t){return p[0]*Math.exp(-t/Math.max(Math.abs(p[1]),0.1))+p[2];}
 function singleExpJac(p,t){
   var A=p[0],tau=Math.max(Math.abs(p[1]),0.1),e=Math.exp(-t/tau);
   return[e,A*(t/(tau*tau))*e,1];
 }
-function exp2Model(p,t){return p[0]*Math.exp(-t/Math.max(Math.abs(p[1]),0.1));}
 function exp2Jac(p,t){
   var A=p[0],tau=Math.max(Math.abs(p[1]),0.1),e=Math.exp(-t/tau);
   return[e,A*(t/(tau*tau))*e];
 }
 
-// Two-stage robust fit with bounded LM
-function fitDoubleExponential(t,v,vDrop,tRange){
-  vDrop=vDrop||(v[0]-v[v.length-1]);
-  tRange=tRange||(t[t.length-1]-t[0]);
-  var vEnd=v[v.length-1],vStart=v[0];
-  var tauMax=20*tRange;
-  var AMax=5*Math.max(vDrop,vStart,0.01);
+function fitDoubleExponential(t, v, vDrop, tRange) {
+  // 统一与 Python 后端完全一致的全局初值策略
+  var vEnd = v[v.length - 1];
+  var vMax = Math.max.apply(null, v);
+  var tauMax = 20 * (t[t.length - 1] - t[0]);
+  var AMax = 5 * Math.max(vMax - vEnd, v[0], 0.01);
+  var y0Min = vEnd * 0.5;
 
-  // === Stage 1: Bounded single exponential ===
-  var lo1=[0,1,vEnd-vDrop*0.8];
-  var hi1=[AMax,tauMax,vEnd+vDrop*0.8];
-  var p01=[vDrop*0.8,tRange*0.25,vEnd];
-  var s1=lmFit(singleExpModel,singleExpJac,t,v,p01,{maxIter:200,lower:lo1,upper:hi1});
-  var A_s=s1.params[0],tau_s=Math.max(1,s1.params[1]),y0_s=s1.params[2];
-
-  // Residual
-  var resid=new Array(t.length);
-  for(var i=0;i<t.length;i++)resid[i]=v[i]-(A_s*Math.exp(-t[i]/tau_s)+y0_s);
-
-  // === Stage 2: Second exponential from residual ===
-  var nHalf=Math.max(10,Math.floor(t.length/2));
-  var tE=t.slice(0,nHalf),rE=resid.slice(0,nHalf);
-  var maxRes=Math.max.apply(null,rE.map(Math.abs));
-  var lo2=[0,1],hi2=[AMax,tauMax];
-  var s2=lmFit(exp2Model,exp2Jac,tE,rE,[maxRes*0.6,50],{maxIter:150,lower:lo2,upper:hi2});
-  var A_r=s2.params[0],tau_r=Math.max(1,s2.params[1]);
-
-  // === Stage 3: Full double-exp ===
-  var A1i,t1i,A2i,t2i,y0i;
-  if(tau_s<=tau_r){A1i=A_s;t1i=tau_s;A2i=A_r;t2i=Math.max(tau_r,tau_s*3);y0i=y0_s;}
-  else{A1i=A_r;t1i=tau_r;A2i=A_s;t2i=Math.max(tau_s,tau_r*3);y0i=y0_s;}
-
-  var p0Sets=[
-    [A1i,t1i,A2i,t2i,y0i],
-    [A1i*0.8,t1i*0.7,A2i*1.2,t2i,y0i],
-    [A1i*1.2,t1i,A2i*0.8,t2i*1.3,y0i],
-    [A1i,t1i*1.5,A2i,t2i*0.8,vEnd],
+  var p0Sets = [
+    [vMax * 0.5, 30, vMax * 0.5, 800, vEnd],
+    [vMax * 0.4, 80, vMax * 0.6, 2000, vEnd],
+    [vMax * 0.6, 50, vMax * 0.4, 1200, vEnd * 0.9],
+    [vMax * 0.5, 50, vMax * 0.5, 1000, vEnd]
   ];
 
-  var lo5=[0,1,0,1,vEnd*0.5];
-  var hi5=[AMax,tauMax,AMax,tauMax,vEnd+vDrop*2];
+  var lo = [0, 1, 0, 1, y0Min];
+  var hi = [AMax, tauMax, AMax, tauMax, vEnd + (vMax - vEnd) * 2];
 
-  var bestP=null,bestCost=Infinity;
-  for(var k=0;k<p0Sets.length;k++){
-    try{
-      var r=lmFit(doubleExpModel,doubleExpJac,t,v,p0Sets[k],{maxIter:300,lower:lo5,upper:hi5});
-      if(r.cost<bestCost&&isFinite(r.cost)){bestCost=r.cost;bestP=r.params.slice();}
-    }catch(e){}
+  var bestP = null, bestCost = Infinity;
+
+  for (var k = 0; k < p0Sets.length; k++) {
+    try {
+      var r = lmFit(doubleExpModel, doubleExpJac, t, v, p0Sets[k], { maxIter: 500, lower: lo, upper: hi });
+      if (r.cost < bestCost && isFinite(r.cost)) {
+        bestCost = r.cost;
+        bestP = r.params.slice();
+      }
+    } catch (e) {
+      console.warn("LM fit failed for init guess set " + k, e);
+    }
   }
-  if(!bestP)bestP=[A1i,t1i,A2i,t2i,y0i];
 
-  var A1=Math.max(0,Math.min(bestP[0],AMax));
-  var tau1=Math.max(0.1,Math.min(Math.abs(bestP[1]),tauMax));
-  var A2=Math.max(0,Math.min(bestP[2],AMax));
-  var tau2=Math.max(0.1,Math.min(Math.abs(bestP[3]),tauMax));
-  var y0=Math.max(vEnd*0.5,Math.min(bestP[4],vEnd+vDrop*2));
+  if (!bestP) return { success: false };
 
-  if(tau1>tau2){var ta=A1,tt=tau1;A1=A2;tau1=tau2;A2=ta;tau2=tt;}
+  var A1 = bestP[0], tau1 = bestP[1], A2 = bestP[2], tau2 = bestP[3], y0 = bestP[4];
 
-  // R2
-  var ssRes=0,ssTot=0,vMean=0;
-  for(var i=0;i<v.length;i++)vMean+=v[i];
-  vMean/=v.length;
-  for(var i=0;i<v.length;i++){
-    var pred=A1*Math.exp(-t[i]/tau1)+A2*Math.exp(-t[i]/tau2)+y0;
-    ssRes+=(v[i]-pred)*(v[i]-pred);
-    ssTot+=(v[i]-vMean)*(v[i]-vMean);
+  if (tau1 > tau2) {
+    var tempA = A1, tempTau = tau1;
+    A1 = A2; tau1 = tau2; A2 = tempA; tau2 = tempTau;
   }
-  return{A1:A1,tau1:tau1,A2:A2,tau2:tau2,y0:y0,r2:Math.max(0,1-ssRes/(ssTot||1)),success:bestP!==null};
+
+  var ssRes = 0, ssTot = 0, vMean = 0;
+  for (var i = 0; i < v.length; i++) vMean += v[i];
+  vMean /= v.length;
+  
+  for (var i = 0; i < v.length; i++) {
+    var pred = A1 * Math.exp(-t[i] / Math.max(tau1, 0.1)) + A2 * Math.exp(-t[i] / Math.max(tau2, 0.1)) + y0;
+    ssRes += (v[i] - pred) * (v[i] - pred);
+    ssTot += (v[i] - vMean) * (v[i] - vMean);
+  }
+  
+  var r2 = Math.max(0, 1 - ssRes / (ssTot || 1));
+
+  return { A1: A1, tau1: tau1, A2: A2, tau2: tau2, y0: y0, r2: r2, success: true };
 }
 
 return{lmFit:lmFit,doubleExpModel:doubleExpModel,doubleExpJacobian:doubleExpJac,fitDoubleExponential:fitDoubleExponential};

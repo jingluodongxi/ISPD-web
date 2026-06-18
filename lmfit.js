@@ -179,21 +179,22 @@ function doubleExpJacobian(params, t) {
 }
 
 function fitDoubleExponential(t, v, vDrop, tRange) {
-  // Classic double-exponential fit with simple wide bounds (like Python original)
+  // Classic double-exponential fit with wide bounds and y0 physics constraint
   vDrop = vDrop || (v[0] - v[v.length - 1]);
   tRange = tRange || (t[t.length - 1] - t[0]);
   var vMax = Math.max.apply(null, v);
   var vEnd = v[v.length - 1];
   var vStart = v[0];
+  var y0Min = vEnd * 0.5;  // baseline can't go below 50% of final voltage
 
   var p0Sets = [
-    [vMax*0.5, 30,   vMax*0.5, 800,  0],
-    [vMax*0.4, 80,   vMax*0.6, 2000, vEnd*0.5],
-    [vMax*0.6, 50,   vMax*0.4, 1200, 0],
-    [vMax*0.5, 50,   vMax*0.5, 1000, 0],
+    [vMax*0.5, 30,   vMax*0.5, 800,   vEnd],
+    [vMax*0.4, 80,   vMax*0.6, 2000,  vEnd],
+    [vMax*0.6, 50,   vMax*0.4, 1200,  vEnd*0.9],
+    [vMax*0.5, 50,   vMax*0.5, 1000,  vEnd],
   ];
 
-  // Wide bounds: only require positivity, let the fit find the right values
+  // Wide bounds: only positivity + y0 lower bound, let LM find right values
   var tauMax = 100 * tRange;
   var AMax = 20 * Math.max(vDrop, vStart, 0.01);
 
@@ -223,7 +224,7 @@ function fitDoubleExponential(t, v, vDrop, tRange) {
   var tau1 = Math.max(0.1, Math.min(Math.abs(p[1]), tauMax));
   var A2 = Math.max(0, Math.min(p[2], AMax));
   var tau2 = Math.max(0.1, Math.min(Math.abs(p[3]), tauMax));
-  var y0 = Math.max(vEnd - vDrop*2, Math.min(p[4], vEnd + vDrop*2));
+  var y0 = Math.max(y0Min, Math.min(p[4], vEnd + vDrop*2));
 
   // Ensure tau2 > tau1 (fast component first)
   if (tau1 > tau2) {

@@ -20,10 +20,12 @@ function drawVtChart(canvas, seriesData, colors) {
   var xMin = Infinity, xMax = -Infinity, yMin = Infinity, yMax = -Infinity;
   seriesData.forEach(function(s) {
     s.tLog.forEach(function(x) { xMin = Math.min(xMin, x); xMax = Math.max(xMax, x); });
-    s.vRaw.forEach(function(y) { yMin = Math.min(yMin, y); yMax = Math.max(yMax, y); });
-    s.tLogDense.forEach(function(x) { xMin = Math.min(xMin, x); xMax = Math.max(xMax, x); });
-    s.vDense.forEach(function(y) { yMin = Math.min(yMin, y); yMax = Math.max(yMax, y); });
+    s.vRaw.forEach(function(y) { if (isFinite(y)) { yMin = Math.min(yMin, y); yMax = Math.max(yMax, y); } });
+    s.tLogDense.forEach(function(x) { if (isFinite(x)) { xMin = Math.min(xMin, x); xMax = Math.max(xMax, x); } });
+    s.vDense.forEach(function(y) { if (isFinite(y)) { yMin = Math.min(yMin, y); yMax = Math.max(yMax, y); } });
   });
+  if (!isFinite(xMin) || !isFinite(xMax)) { xMin = 0; xMax = 5; }
+  if (!isFinite(yMin) || !isFinite(yMax)) { yMin = 0; yMax = 100; }
   var xPad = (xMax - xMin) * 0.05 || 0.5;
   var yPad = (yMax - yMin) * 0.08 || 1;
   xMin -= xPad; xMax += xPad; yMin -= yPad; yMax += yPad;
@@ -128,7 +130,7 @@ function drawEtNtChart(canvas, seriesData, colors) {
 
   var xMin = Infinity, xMax = -Infinity, yMin = Infinity, yMax = -Infinity;
   seriesData.forEach(function(s) {
-    s.E_t.forEach(function(x) { if (x >= 0 && x <= 2) { xMin = Math.min(xMin, x); xMax = Math.max(xMax, x); } });
+    s.E_t.forEach(function(x) { if (isFinite(x) && x >= 0 && x <= 2) { xMin = Math.min(xMin, x); xMax = Math.max(xMax, x); } });
     s.N_t.forEach(function(y) { if (isFinite(y) && y >= 0) { yMin = Math.min(yMin, y); yMax = Math.max(yMax, y); } });
   });
   if (!isFinite(xMin)) { xMin = 0; xMax = 2; }

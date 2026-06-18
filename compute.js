@@ -86,13 +86,15 @@ function compute(t, v, T, nu, eps_r, d_um) {
   var tLog = t.map(function(x) { return Math.log10(x); });
   var tLogDense = tDense.map(function(x) { return Math.log10(x); });
 
+  // NaN protection
+  function safe(v, fallback) { return (isFinite(v) && v !== null) ? v : fallback; }
   return {
-    r2: r2, v0: v0,
-    A1: A1, tau1: tau1, A2: A2, tau2: tau2, y0: y0,
+    r2: safe(r2, 0), v0: safe(v0, 0),
+    A1: safe(A1, 0), tau1: safe(tau1, 1), A2: safe(A2, 0), tau2: safe(tau2, 1), y0: safe(y0, 0),
     shallow_E: shallow_E, shallow_N: shallow_N,
     deep_E: deep_E, deep_N: deep_N,
-    tDense: tDense, vDense: vDense,
-    E_t: E_t, N_t: N_t,
+    tDense: tDense.map(function(x){return safe(x,0);}), vDense: vDense.map(function(x){return safe(x,0);}),
+    E_t: E_t.map(function(x){return safe(x,0);}), N_t: N_t.map(function(x){return safe(x,0);}),
     tLog: tLog, vRaw: v,
     tLogDense: tLogDense,
     maxNt: maxNt

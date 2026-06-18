@@ -89,7 +89,10 @@ function compute(t, v, T, nu, eps_r, d_um) {
   deep_E   = E_t[idxD];
   deep_N   = N_t[idxD];
 
-  // Step 5: Generate log-transformed data for plotting
+  // Step 5: max N_t for reference
+  var maxNt = Math.max.apply(null, N_t);
+
+  // Step 6: Generate log-transformed data for plotting
   var tLog = t.map(function(x) { return Math.log10(x); });
   var tLogDense = tDense.map(function(x) { return Math.log10(x); });
 

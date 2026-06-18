@@ -1,1 +1,88 @@
-var ISPD=function(){"use strict";var n=8617e-8,t=8854e-15,e=1602e-22;function a(n,t,e,a,r){return n*(-t/e*Math.exp(-n/e)-a/r*Math.exp(-n/r))}return{K_B:n,EPS_0:t,E_CHARGE:e,compute:function(r,u,l,o,i,p){l=l||300,o=o||1e12,i=i||3,p=p||50;for(var f=LM.fitDoubleExponential(r,u),h=f.A1,c=f.tau1,M=f.A2,m=f.tau2,s=f.y0,v=f.r2,x=u[0],g=Math.max(Math.min.apply(null,r),.001),d=Math.max.apply(null,r),y=1e3,A=Math.log10(g),_=Math.log10(d),w=new Array(y),E=new Array(y),D=0;D<y;D++)w[D]=Math.pow(10,A+(_-A)*D/999),E[D]=LM.doubleExpModel([h,c,M,m,s],w[D]);var L=t*i/(e*(1e-6*p)),N=new Array(y),P=new Array(y);for(D=0;D<y;D++){N[D]=n*l*Math.log(o*w[D]);var b=a(w[D],h,c,M,m);P[D]=L*Math.abs(b)}var k=Math.max.apply(null,P),R=null,S=null,B=null,C=null;if(k>0){var F=Peaks.findPeaks(P,{prominence:.01*k,distance:3});if(F.length>0){F.sort(function(n,t){return N[n.index]-N[t.index]});var G=F.map(function(n){return N[n.index]}),H=F.map(function(n){return P[n.index]});F.length>=2?(R=G[0],S=H[0],B=G[G.length-1],C=H[G.length-1]):G[0]<.9?(R=G[0],S=H[0]):(B=G[0],C=H[0])}}var I=r.map(function(n){return Math.log10(n)}),K=w.map(function(n){return Math.log10(n)});function j(n,t){return isFinite(n)&&null!==n?n:t}return{r2:j(v,0),v0:j(x,0),A1:j(h,0),tau1:j(c,1),A2:j(M,0),tau2:j(m,1),y0:j(s,0),shallow_E:R,shallow_N:S,deep_E:B,deep_N:C,tDense:w.map(function(n){return j(n,0)}),vDense:E.map(function(n){return j(n,0)}),E_t:N.map(function(n){return j(n,0)}),N_t:P.map(function(n){return j(n,0)}),tLog:I,vRaw:u,tLogDense:K,maxNt:k}}}}();
+﻿
+var ISPD = (function() {
+'use strict';
+var K_B = 8.617e-5; 
+var EPS_0 = 8.854e-12; 
+var E_CHARGE = 1.602e-19; 
+function analyticDerivative(t, A1, tau1, A2, tau2) {
+ var dVdt = -(A1 / tau1) * Math.exp(-t / tau1) - (A2 / tau2) * Math.exp(-t / tau2);
+ return t * dVdt;
+}
+function compute(t, v, T, nu, eps_r, d_um) {
+ T = T || 300;
+ nu = nu || 1e12;
+ eps_r = eps_r || 3.0;
+ d_um = d_um || 50;
+ var fit = LM.fitDoubleExponential(t, v);
+ var A1 = fit.A1, tau1 = fit.tau1, A2 = fit.A2, tau2 = fit.tau2, y0 = fit.y0;
+ var r2 = fit.r2;
+ var v0 = v[0];
+ var v0Amplitude = Math.abs(v[0] - y0);
+ var tMin = Math.max(Math.min.apply(null, t), 1e-3);
+ var tMax = Math.max.apply(null, t);
+ if (v0Amplitude > 0) {
+ var maxTau = Math.max(Math.abs(tau1), Math.abs(tau2));
+ var tDecay = maxTau * 4.605;
+ tMax = Math.max(tMax, tDecay);
+ }
+ tMax = Math.min(tMax, Math.max.apply(null, t) * 1000);
+ var nDense = 1000;
+ var logMin = Math.log10(tMin);
+ var logMax = Math.log10(tMax);
+ var tDense = new Array(nDense);
+ var vDense = new Array(nDense);
+ for (var i = 0; i < nDense; i++) {
+ tDense[i] = Math.pow(10, logMin + (logMax - logMin) * i / (nDense - 1));
+ vDense[i] = LM.doubleExpModel([A1, tau1, A2, tau2, y0], tDense[i]);
+ }
+ var d_m = d_um * 1e-6;
+ var C_factor = (EPS_0 * eps_r) / (E_CHARGE * d_m);
+ var E_t = new Array(nDense);
+ var N_t = new Array(nDense);
+ for (var i = 0; i < nDense; i++) {
+ E_t[i] = K_B * T * Math.log(nu * tDense[i]);
+ var dVdlnT = analyticDerivative(tDense[i], A1, tau1, A2, tau2);
+ N_t[i] = C_factor * Math.abs(dVdlnT);
+ }
+ var maxNt = Math.max.apply(null, N_t);
+ var shallow_E = null, shallow_N = null, deep_E = null, deep_N = null;
+ if (maxNt > 0) {
+ var peaks = Peaks.findPeaks(N_t, { prominence: maxNt * 0.01, distance: 3 });
+ if (peaks.length > 0) {
+ peaks.sort(function(a, b) { return E_t[a.index] - E_t[b.index]; });
+ var peakEs = peaks.map(function(p) { return E_t[p.index]; });
+ var peakNs = peaks.map(function(p) { return N_t[p.index]; });
+ if (peaks.length >= 2) {
+ shallow_E = peakEs[0]; shallow_N = peakNs[0];
+ deep_E = peakEs[peakEs.length - 1]; deep_N = peakNs[peakEs.length - 1];
+ } else {
+ if (peakEs[0] < 0.90) {
+ shallow_E = peakEs[0]; shallow_N = peakNs[0];
+ } else {
+ deep_E = peakEs[0]; deep_N = peakNs[0];
+ }
+ }
+ }
+ }
+ var tLog = t.map(function(x) { return Math.log10(x); });
+ var tLogDense = tDense.map(function(x) { return Math.log10(x); });
+ function safe(v, fallback) { return (isFinite(v) && v !== null) ? v : fallback; }
+ return {
+ r2: safe(r2, 0), v0: safe(v0, 0),
+ A1: safe(A1, 0), tau1: safe(tau1, 1), A2: safe(A2, 0), tau2: safe(tau2, 1), y0: safe(y0, 0),
+ shallow_E: shallow_E, shallow_N: shallow_N,
+ deep_E: deep_E, deep_N: deep_N,
+ tDense: tDense.map(function(x){return safe(x,0);}), vDense: vDense.map(function(x){return safe(x,0);}),
+ E_t: E_t.map(function(x){return safe(x,0);}), N_t: N_t.map(function(x){return safe(x,0);}),
+ tLog: tLog, vRaw: v,
+ tLogDense: tLogDense,
+ maxNt: maxNt
+ };
+}
+return {
+ K_B: K_B,
+ EPS_0: EPS_0,
+ E_CHARGE: E_CHARGE,
+ compute: compute
+};
+})();

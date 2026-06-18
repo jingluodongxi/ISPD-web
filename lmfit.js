@@ -137,7 +137,7 @@ function fitDoubleExponential(t,v,vDrop,tRange){
     [A1i,t1i*1.5,A2i,t2i*0.8,vEnd],
   ];
 
-  var lo5=[0,1,0,1,vEnd*0.3];
+  var lo5=[0,1,0,1,vEnd*0.5];
   var hi5=[AMax,tauMax,AMax,tauMax,vEnd+vDrop*2];
 
   var bestP=null,bestCost=Infinity;
@@ -153,7 +153,7 @@ function fitDoubleExponential(t,v,vDrop,tRange){
   var tau1=Math.max(0.1,Math.min(Math.abs(bestP[1]),tauMax));
   var A2=Math.max(0,Math.min(bestP[2],AMax));
   var tau2=Math.max(0.1,Math.min(Math.abs(bestP[3]),tauMax));
-  var y0=Math.max(vEnd*0.3,Math.min(bestP[4],vEnd+vDrop*2));
+  var y0=Math.max(vEnd*0.5,Math.min(bestP[4],vEnd+vDrop*2));
 
   if(tau1>tau2){var ta=A1,tt=tau1;A1=A2;tau1=tau2;A2=ta;tau2=tt;}
 

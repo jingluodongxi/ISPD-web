@@ -12,9 +12,6 @@ function compute(t, v, T, nu, eps_r, d_um) {
   var A1 = fit.A1, tau1 = fit.tau1, A2 = fit.A2, tau2 = fit.tau2, y0 = fit.y0;
   var r2 = fit.r2, v0 = v[0];
 
-  // y0 safety: prevent collapse for slow-decay data
-  if (y0 < v[v.length-1] * 0.5) y0 = v[v.length-1] * 0.5;
-
   // Step 2: t_dense
   var v0Amp = Math.abs(v[0] - y0);
   var tMin = Math.max(t[0]||1e-3, 1e-3), tMax = t[t.length - 1];

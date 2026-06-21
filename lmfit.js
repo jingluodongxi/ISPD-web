@@ -100,21 +100,19 @@ function fitDoubleExponential(t, v, vDrop, tRange) {
   // 统一与 Python 后端完全一致的全局初值策略
   var vEnd = v[v.length - 1];
   var vMax = Math.max.apply(null, v);
-  var tRange = t[t.length - 1] - t[0];
-  var tauMax = 20 * tRange;
+  var tauMax = 20 * (t[t.length - 1] - t[0]);
   var AMax = 5 * Math.max(vMax - vEnd, v[0], 0.01);
   var y0Min = vEnd * 0.5;
 
   var p0Sets = [
-    [vMax * 0.5, tRange * 0.1, vMax * 0.5, tRange * 10, vEnd],
-    [vMax * 0.8, tRange * 0.05, vMax * 0.2, tRange * 5, vEnd * 0.9],
+    [vMax * 0.5, 30, vMax * 0.5, 800, vEnd],
+    [vMax * 0.4, 80, vMax * 0.6, 2000, vEnd],
+    [vMax * 0.6, 50, vMax * 0.4, 1200, vEnd * 0.9],
     [vMax * 0.5, 50, vMax * 0.5, 1000, vEnd]
   ];
 
   var lo = [0, 1, 0, 1, y0Min];
-  // 解除封印：放开LM拟合的参数搜索边界，允许算出万亿秒级的超长弛豫时间
-  var TAU_INFINITY = 1e15; 
-  var hi = [AMax, TAU_INFINITY, AMax, TAU_INFINITY, vEnd + (vMax - vEnd) * 2];
+  var hi = [AMax, tauMax, AMax, tauMax, vEnd + (vMax - vEnd) * 2];
 
   var bestP = null, bestCost = Infinity;
 

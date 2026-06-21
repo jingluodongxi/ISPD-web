@@ -176,7 +176,7 @@
       var xMin = Infinity, xMax = -Infinity, yMin = Infinity, yMax = -Infinity;
       datasets.forEach(function(ds) {
         ds.E_t.forEach(function(v) {
-          if (isFinite(v) && v >= 0 && v <= 2) { xMin = Math.min(xMin, v); xMax = Math.max(xMax, v); }
+          if (isFinite(v) && v >= 0) { xMin = Math.min(xMin, v); xMax = Math.max(xMax, v); }
         });
         ds.N_t.forEach(function(v) {
           if (isFinite(v) && v >= 0) { yMin = Math.min(yMin, v); yMax = Math.max(yMax, v); }

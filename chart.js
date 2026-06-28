@@ -72,13 +72,15 @@
         ctx.beginPath(); ctx.moveTo(margin.left, toY(gy)); ctx.lineTo(margin.left + plotW, toY(gy)); ctx.stroke();
       }
 
-      // Axes
+      // Axes (closed box)
       ctx.strokeStyle = "#333333";
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.moveTo(margin.left, margin.top);
       ctx.lineTo(margin.left, margin.top + plotH);
       ctx.lineTo(margin.left + plotW, margin.top + plotH);
+      ctx.lineTo(margin.left + plotW, margin.top);
+      ctx.lineTo(margin.left, margin.top);
       ctx.stroke();
 
       // Data points and fit curves
@@ -211,13 +213,15 @@
         ctx.beginPath(); ctx.moveTo(margin.left, toY(gy)); ctx.lineTo(margin.left + plotW, toY(gy)); ctx.stroke();
       }
 
-      // Axes
+      // Axes (closed box)
       ctx.strokeStyle = "#333333";
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.moveTo(margin.left, margin.top);
       ctx.lineTo(margin.left, margin.top + plotH);
       ctx.lineTo(margin.left + plotW, margin.top + plotH);
+      ctx.lineTo(margin.left + plotW, margin.top);
+      ctx.lineTo(margin.left, margin.top);
       ctx.stroke();
 
       // N_t curves and star markers

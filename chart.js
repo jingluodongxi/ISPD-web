@@ -83,7 +83,11 @@
       ctx.lineTo(margin.left, margin.top);
       ctx.stroke();
 
-      // Data points and fit curves
+      // Data points and fit curves (clipped to plot area)
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(margin.left, margin.top, plotW, plotH);
+      ctx.clip();
       datasets.forEach(function(ds, idx) {
         var color = colors[idx % colors.length];
         // Scatter points
@@ -109,6 +113,7 @@
         }
         ctx.stroke();
       });
+      ctx.restore();
 
       // X-axis ticks
       ctx.fillStyle = "#333333";

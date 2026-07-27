@@ -175,19 +175,17 @@
       canvas.style.height = H + "px";
       ctx.scale(dpr, dpr);
 
-      var margin = { top: 55, right: 50, bottom: 105, left: 100 };
+      var margin = { top: 55, right: 50, bottom: 80, left: 100 };
       var plotW = W - margin.left - margin.right;
       var plotH = H - margin.top - margin.bottom;
 
       // Compute data ranges
       var xMin = Infinity, xMax = -Infinity, yMin = Infinity, yMax = -Infinity;
       datasets.forEach(function(ds) {
-        var allE = (ds.EExtrapolated || []).concat(ds.EMeasured || ds.E_t || []);
-        var allN = (ds.NExtrapolated || []).concat(ds.NMeasured || ds.N_t || []);
-        allE.concat([ds.shallow_E, ds.deep_E]).forEach(function(v) {
+        ds.E_t.forEach(function(v) {
           if (isFinite(v) && v >= 0) { xMin = Math.min(xMin, v); xMax = Math.max(xMax, v); }
         });
-        allN.concat([ds.shallow_N, ds.deep_N]).forEach(function(v) {
+        ds.N_t.forEach(function(v) {
           if (isFinite(v) && v >= 0) { yMin = Math.min(yMin, v); yMax = Math.max(yMax, v); }
         });
       });
@@ -231,47 +229,28 @@
       ctx.lineTo(margin.left, margin.top);
       ctx.stroke();
 
-      function drawCurve(E, N, color, dashed) {
-        if (!E || !N || E.length === 0) return;
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 2.5;
-        ctx.setLineDash(dashed ? [9, 6] : []);
-        ctx.beginPath();
-        var started = false;
-        for (var i = 0; i < E.length; i++) {
-          if (!isFinite(E[i]) || !isFinite(N[i])) continue;
-          var px = toX(E[i]);
-          var py = toY(N[i]);
-          if (!started) {
-            ctx.moveTo(px, py);
-            started = true;
-          } else {
-            ctx.lineTo(px, py);
-          }
-        }
-        if (started) ctx.stroke();
-        ctx.setLineDash([]);
-      }
-
-      // N_t curves and peak markers, clipped to the plotting rectangle.
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(margin.left, margin.top, plotW, plotH);
-      ctx.clip();
+      // N_t curves and star markers
       datasets.forEach(function(ds, idx) {
         var color = colors[idx % colors.length];
-        drawCurve(ds.EExtrapolated || [], ds.NExtrapolated || [], color, true);
-        drawCurve(ds.EMeasured || ds.E_t || [], ds.NMeasured || ds.N_t || [], color, false);
+        // Curve
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        var started = false;
+        for (var i = 0; i < ds.E_t.length; i++) {
+          if (ds.E_t[i] < xMin || ds.E_t[i] > xMax) continue;
+          var py = toY(ds.N_t[i]);
+          if (!isFinite(py) || py < margin.top || py > margin.top + plotH) continue;
+          var px = toX(ds.E_t[i]);
+          if (!started) { ctx.moveTo(px, py); started = true; }
+          else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
 
         // Peak stars
-        if (isFinite(ds.shallow_E) && isFinite(ds.shallow_N)) {
-          drawStar(ctx, toX(ds.shallow_E), toY(ds.shallow_N), color);
-        }
-        if (isFinite(ds.deep_E) && isFinite(ds.deep_N)) {
-          drawStar(ctx, toX(ds.deep_E), toY(ds.deep_N), color);
-        }
+        if (ds.shallow_E != null) drawStar(ctx, toX(ds.shallow_E), toY(ds.shallow_N), color);
+        if (ds.deep_E != null) drawStar(ctx, toX(ds.deep_E), toY(ds.deep_N), color);
       });
-      ctx.restore();
 
       // X-axis ticks
       ctx.fillStyle = "#333333";
@@ -284,10 +263,6 @@
       // X-axis title
       ctx.font = 'bold 16px "Microsoft YaHei", "SimHei", sans-serif';
       ctx.fillText("陷阱能级深度 E\u209C (eV)", margin.left + plotW / 2, margin.top + plotH + 60);
-      ctx.font = '12px "Microsoft YaHei", "SimHei", sans-serif';
-      ctx.fillStyle = "#475569";
-      ctx.fillText("实线：实际测量时间范围内拟合　　虚线：首个测点之前的模型外推（不代表实测数据）",
-        margin.left + plotW / 2, margin.top + plotH + 84);
 
       // Y-axis ticks
       ctx.textAlign = "right";

@@ -1,1 +1,338 @@
-var COLOR_PALETTE=["#005FB8","#D95319","#EDB120","#7E2F8E","#77AC30","#4DBEEE","#A2142F","#000000"],datasets={},colorIndex=0,allResults=[];function addFileItem(e,t){var n=document.createElement("li");n.innerHTML='<span class="dot" style="background:'+t+'"></span><input type="checkbox" checked><span style="flex:1">'+e+"</span>",document.getElementById("file-list").appendChild(n)}function renderTable(){var e=document.getElementById("result-tbody");e.innerHTML="",allResults.forEach(function(t){var n=document.createElement("tr");n.innerHTML="<td>"+t.filename+"</td><td>"+t.r2.toFixed(4)+"</td><td>"+t.v0.toFixed(2)+"</td><td>"+(null!=t.shallow_E?t.shallow_E.toFixed(4):"-")+"</td><td>"+(null!=t.shallow_N?t.shallow_N.toExponential(2):"-")+"</td><td>"+(null!=t.deep_E?t.deep_E.toFixed(4):"-")+"</td><td>"+(null!=t.deep_N?t.deep_N.toExponential(2):"-")+"</td><td>"+t.A1.toFixed(2)+"</td><td>"+t.tau1.toFixed(2)+"</td><td>"+t.A2.toFixed(2)+"</td><td>"+t.tau2.toFixed(2)+"</td><td>"+t.y0.toFixed(2)+"</td>",e.appendChild(n)})}function switchTab(e){document.querySelectorAll(".tab-btn").forEach(function(t,n){t.classList.toggle("active",n===e)}),document.getElementById("tab-content-0").classList.toggle("active",0===e),document.getElementById("tab-content-1").classList.toggle("active",1===e),document.getElementById("tab3-content").classList.toggle("active",2===e)}function clearCharts(){var e=document.getElementById("chart1-canvas"),t=document.getElementById("chart2-canvas"),n=e.getContext("2d"),a=t.getContext("2d");n.clearRect(0,0,e.width,e.height),a.clearRect(0,0,t.width,t.height),e.style.display="none",t.style.display="none",document.getElementById("result-tbody").innerHTML="",allResults=[],showStatus("图表与特征数据已清空。")}function showStatus(e,t){var n=document.getElementById("status-bar");n.textContent=e,n.style.color="error"===t?"#D95319":"warn"===t?"#EDB120":"#475569"}document.getElementById("loading-overlay").classList.add("hidden"),showStatus("系统就绪：采用双指数拟合与面陷阱密度解析模型。请导入数据并点击运行。"),document.getElementById("file-input").addEventListener("change",function(e){var t=Array.from(e.target.files);0!==t.length&&(document.getElementById("radio-single").checked&&(datasets={},colorIndex=0,document.getElementById("file-list").innerHTML=""),t.forEach(function(e){if(!datasets[e.name]){var t=new FileReader;t.onload=function(t){try{var n=new Uint8Array(t.target.result),a=XLSX.read(n,{type:"array"}),l=a.SheetNames[0],o=a.Sheets[l],d=XLSX.utils.sheet_to_json(o,{header:1,defval:null}).filter(function(e){return e&&e.length>=2}),r=0;d.length>0&&"string"==typeof d[0][0]&&isNaN(parseFloat(d[0][0]))&&(r=1);for(var c=[],s=[],i=r;i<d.length;i++){var u=parseFloat(d[i][0]),m=parseFloat(d[i][1]);!isNaN(u)&&isFinite(u)&&!isNaN(m)&&isFinite(m)&&(c.push(u),s.push(m))}if(c.length<3)return void showStatus(e.name+" 解析失败: 有效数据点不足（需要 >= 3）","error");var h=COLOR_PALETTE[colorIndex%COLOR_PALETTE.length];colorIndex++,datasets[e.name]={t:c,v:s,color:h},addFileItem(e.name,h),showStatus("已挂载: "+e.name+" ("+c.length+" 个数据点)")}catch(t){showStatus(e.name+" 解析失败: "+t.message,"error")}},t.readAsArrayBuffer(e)}}),e.target.value="")}),document.querySelectorAll('input[name="mode"]').forEach(function(e){e.addEventListener("change",function(){document.getElementById("radio-single").checked&&(document.getElementById("file-list").innerHTML="",datasets={},colorIndex=0)})}),document.getElementById("btn-compute").addEventListener("click",function(){var e=document.querySelectorAll("#file-list li"),t=[];if(e.forEach(function(e){var n=e.querySelector('input[type="checkbox"]'),a=e.querySelector("span:last-child");n&&n.checked&&a&&t.push(a.textContent)}),0!==t.length)try{var n=parseFloat(document.getElementById("input-T").value)||300,a=parseFloat(document.getElementById("combo-nu").value)||1e12,l=parseFloat(document.getElementById("input-epsr").value)||3,o=parseFloat(document.getElementById("input-d").value)||50;showStatus("正在运行双指数解析与陷阱参数识别计算..."),allResults=[];var d=[],r=[],c=[];t.forEach(function(e){var t=datasets[e];if(t){var s=ISPD.compute(t.t,t.v,n,a,l,o);s.filename=e,s.color=t.color,allResults.push(s),c.push(t.color),d.push({tLog:s.tLog,vRaw:s.vRaw,tLogDense:s.tLogDense,vDense:s.vDense,label:e+" (R²="+s.r2.toFixed(4)+")"}),r.push({E_t:s.E_t,N_t:s.N_t,shallow_E:s.shallow_E,shallow_N:s.shallow_N,deep_E:s.deep_E,deep_N:s.deep_N,label:e})}});var s=document.getElementById("chart1-canvas");s.style.display="block",ChartRenderer.drawVtChart(s,d,c);var i=document.getElementById("chart2-canvas");i.style.display="block",ChartRenderer.drawEtNtChart(i,r,c),renderTable(),switchTab(1),showStatus("解析成功！已从 "+t.length+" 组曲线中提取出完整的多维物理特征库。")}catch(e){showStatus("运行异常: "+e.message,"error"),console.error(e)}else showStatus("请在列表中至少勾选一个数据文件！","warn")}),document.querySelectorAll(".tab-btn").forEach(function(e){e.addEventListener("click",function(){switchTab(parseInt(this.dataset.tab))})}),document.getElementById("btn-export").addEventListener("click",function(){if(0!==allResults.length){var e="数据标识,拟合优度 R²,V0 (V),浅陷阱峰深度(eV),浅陷阱面密度(m⁻²),深陷阱峰深度(eV),深陷阱面密度(m⁻²),幅值 A1 (V),弛豫时间 τ1 (s),幅值 A2 (V),弛豫时间 τ2 (s),残余电位 y0 (V)\n";allResults.forEach(function(t){e+=[t.filename,t.r2.toFixed(4),t.v0.toFixed(2),null!=t.shallow_E?t.shallow_E.toFixed(4):"-",null!=t.shallow_N?t.shallow_N.toExponential(2):"-",null!=t.deep_E?t.deep_E.toFixed(4):"-",null!=t.deep_N?t.deep_N.toExponential(2):"-",t.A1.toFixed(2),t.tau1.toFixed(2),t.A2.toFixed(2),t.tau2.toFixed(2),t.y0.toFixed(2)].join(",")+"\n"});var t=new Blob(["\ufeff"+e],{type:"text/csv;charset=utf-8"}),n=document.createElement("a");n.href=URL.createObjectURL(t),n.download="ISPD_Physics_Parameters.csv",n.click()}else showStatus("表格中无数据可导出！","warn")}),document.getElementById("tbtn-save1").addEventListener("click",function(){var e=document.getElementById("chart1-canvas"),t=document.createElement("a");t.href=e.toDataURL("image/png"),t.download="ISPD_Vt_Chart.png",t.click()}),document.getElementById("tbtn-save2").addEventListener("click",function(){var e=document.getElementById("chart2-canvas"),t=document.createElement("a");t.href=e.toDataURL("image/png"),t.download="ISPD_EtNt_Chart.png",t.click()}),document.getElementById("tbtn-clear1").addEventListener("click",clearCharts),document.getElementById("tbtn-clear2").addEventListener("click",clearCharts);
+var COLOR_PALETTE = [
+  "#005FB8", "#D95319", "#EDB120", "#7E2F8E",
+  "#77AC30", "#4DBEEE", "#A2142F", "#000000"
+];
+var datasets = {};
+var colorIndex = 0;
+var allResults = [];
+
+function addFileItem(filename, color) {
+  var item = document.createElement("li");
+  var dot = document.createElement("span");
+  var checkbox = document.createElement("input");
+  var name = document.createElement("span");
+
+  dot.className = "dot";
+  dot.style.background = color;
+  checkbox.type = "checkbox";
+  checkbox.checked = true;
+  checkbox.dataset.filename = filename;
+  name.style.flex = "1";
+  name.textContent = filename;
+
+  item.appendChild(dot);
+  item.appendChild(checkbox);
+  item.appendChild(name);
+  document.getElementById("file-list").appendChild(item);
+}
+
+function peakNature(region, boundaryWarning) {
+  var labels = {
+    before: "首点前外推",
+    measured: "测量范围内",
+    after: "末点后外推"
+  };
+  var label = labels[region] || "状态未知";
+  return boundaryWarning ? label + "；参数边界，谨慎解释" : label;
+}
+
+function renderTable() {
+  var tbody = document.getElementById("result-tbody");
+  tbody.innerHTML = "";
+
+  allResults.forEach(function(result) {
+    var values = [
+      result.filename,
+      result.tFirst.toFixed(2),
+      result.r2.toFixed(4),
+      result.v0.toFixed(2),
+      result.shallow_E != null ? result.shallow_E.toFixed(4) : "-",
+      result.shallow_N != null ? result.shallow_N.toExponential(2) : "-",
+      peakNature(result.shallow_peak_region, result.shallow_boundary_warning),
+      result.deep_E != null ? result.deep_E.toFixed(4) : "-",
+      result.deep_N != null ? result.deep_N.toExponential(2) : "-",
+      peakNature(result.deep_peak_region, result.deep_boundary_warning),
+      result.A1.toFixed(2),
+      result.tau1.toFixed(2),
+      result.A2.toFixed(2),
+      result.tau2.toFixed(2),
+      result.y0.toFixed(2)
+    ];
+    var row = document.createElement("tr");
+    values.forEach(function(value) {
+      var cell = document.createElement("td");
+      cell.textContent = value;
+      row.appendChild(cell);
+    });
+    tbody.appendChild(row);
+  });
+}
+
+function switchTab(index) {
+  document.querySelectorAll(".tab-btn").forEach(function(button, buttonIndex) {
+    button.classList.toggle("active", buttonIndex === index);
+  });
+  document.getElementById("tab-content-0").classList.toggle("active", index === 0);
+  document.getElementById("tab-content-1").classList.toggle("active", index === 1);
+  document.getElementById("tab3-content").classList.toggle("active", index === 2);
+}
+
+function clearCharts() {
+  var chart1 = document.getElementById("chart1-canvas");
+  var chart2 = document.getElementById("chart2-canvas");
+  chart1.getContext("2d").clearRect(0, 0, chart1.width, chart1.height);
+  chart2.getContext("2d").clearRect(0, 0, chart2.width, chart2.height);
+  chart1.style.display = "none";
+  chart2.style.display = "none";
+  document.getElementById("result-tbody").innerHTML = "";
+  allResults = [];
+  showStatus("图表与特征数据已清空。");
+}
+
+function showStatus(message, type) {
+  var status = document.getElementById("status-bar");
+  status.textContent = message;
+  status.style.color = type === "error" ? "#D95319" :
+    type === "warn" ? "#B7791F" : "#475569";
+}
+
+function validateParsedTimes(times) {
+  for (var i = 0; i < times.length; i++) {
+    if (times[i] <= 0) {
+      throw new Error("时间必须全部大于 0 s，第 " + (i + 1) + " 个有效时间为 " + times[i] + " s");
+    }
+    if (i > 0 && times[i] <= times[i - 1]) {
+      throw new Error(
+        "时间必须严格递增，不允许重复或倒序；请检查 " +
+        times[i - 1] + " s 与 " + times[i] + " s"
+      );
+    }
+  }
+}
+
+function parseWorkbook(arrayBuffer) {
+  var workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: "array" });
+  var firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+  var rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: null })
+    .filter(function(row) { return row && row.length >= 2; });
+  var startRow = 0;
+
+  if (rows.length > 0 && typeof rows[0][0] === "string" && isNaN(parseFloat(rows[0][0]))) {
+    startRow = 1;
+  }
+
+  var times = [];
+  var voltages = [];
+  for (var i = startRow; i < rows.length; i++) {
+    var time = parseFloat(rows[i][0]);
+    var voltage = parseFloat(rows[i][1]);
+    if (isFinite(time) && isFinite(voltage)) {
+      times.push(time);
+      voltages.push(voltage);
+    }
+  }
+
+  if (times.length < 3) {
+    throw new Error("有效数据点不足（至少需要 3 个）");
+  }
+  validateParsedTimes(times);
+  return { t: times, v: voltages };
+}
+
+document.getElementById("loading-overlay").classList.add("hidden");
+showStatus("系统就绪：支持不同起始时间，并区分实测范围与双向模型外推。");
+
+document.getElementById("file-input").addEventListener("change", function(event) {
+  var files = Array.from(event.target.files);
+  if (files.length === 0) return;
+
+  if (document.getElementById("radio-single").checked) {
+    datasets = {};
+    colorIndex = 0;
+    document.getElementById("file-list").innerHTML = "";
+  }
+
+  files.forEach(function(file) {
+    if (datasets[file.name]) return;
+    var reader = new FileReader();
+    reader.onload = function(loadEvent) {
+      try {
+        var parsed = parseWorkbook(loadEvent.target.result);
+        var color = COLOR_PALETTE[colorIndex % COLOR_PALETTE.length];
+        colorIndex++;
+        datasets[file.name] = { t: parsed.t, v: parsed.v, color: color };
+        addFileItem(file.name, color);
+        showStatus(
+          "已挂载 " + file.name + "（" + parsed.t.length +
+          " 个数据点，首个测点 " + parsed.t[0] + " s）"
+        );
+      } catch (error) {
+        showStatus(file.name + " 解析失败：" + error.message, "error");
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+  event.target.value = "";
+});
+
+document.querySelectorAll('input[name="mode"]').forEach(function(radio) {
+  radio.addEventListener("change", function() {
+    if (document.getElementById("radio-single").checked) {
+      document.getElementById("file-list").innerHTML = "";
+      datasets = {};
+      colorIndex = 0;
+    }
+  });
+});
+
+document.getElementById("btn-compute").addEventListener("click", function() {
+  var selectedFiles = [];
+  document.querySelectorAll("#file-list input[type='checkbox']").forEach(function(checkbox) {
+    if (checkbox.checked) selectedFiles.push(checkbox.dataset.filename);
+  });
+
+  if (selectedFiles.length === 0) {
+    showStatus("请在列表中至少勾选一个数据文件。", "warn");
+    return;
+  }
+
+  try {
+    var temperature = parseFloat(document.getElementById("input-T").value) || 300;
+    var frequency = parseFloat(document.getElementById("combo-nu").value) || 1e12;
+    var epsilonR = parseFloat(document.getElementById("input-epsr").value) || 3;
+    var thickness = parseFloat(document.getElementById("input-d").value) || 50;
+    var vtDatasets = [];
+    var trapDatasets = [];
+    var colors = [];
+
+    showStatus("正在运行双指数拟合与陷阱参数计算……");
+    allResults = [];
+
+    selectedFiles.forEach(function(filename) {
+      var source = datasets[filename];
+      if (!source) return;
+      var result = ISPD.compute(
+        source.t, source.v, temperature, frequency, epsilonR, thickness
+      );
+      result.filename = filename;
+      result.color = source.color;
+      allResults.push(result);
+      colors.push(source.color);
+
+      vtDatasets.push({
+        tLog: result.tLog,
+        vRaw: result.vRaw,
+        tLogDense: result.tLogDense,
+        vDense: result.vDense,
+        label: filename + " (R²=" + result.r2.toFixed(4) + ")"
+      });
+      trapDatasets.push({
+        EMeasured: result.EMeasured,
+        NMeasured: result.NMeasured,
+        EPreExtrapolated: result.EPreExtrapolated,
+        NPreExtrapolated: result.NPreExtrapolated,
+        EPostExtrapolated: result.EPostExtrapolated,
+        NPostExtrapolated: result.NPostExtrapolated,
+        shallow_E: result.shallow_E,
+        shallow_N: result.shallow_N,
+        deep_E: result.deep_E,
+        deep_N: result.deep_N,
+        label: filename
+      });
+    });
+
+    var chart1 = document.getElementById("chart1-canvas");
+    chart1.style.display = "block";
+    ChartRenderer.drawVtChart(chart1, vtDatasets, colors);
+
+    var chart2 = document.getElementById("chart2-canvas");
+    chart2.style.display = "block";
+    ChartRenderer.drawEtNtChart(chart2, trapDatasets, colors);
+
+    renderTable();
+    switchTab(1);
+    showStatus(
+      "分析成功：已处理 " + selectedFiles.length +
+      " 组曲线。虚线表示测量时间范围之外的模型外推。"
+    );
+  } catch (error) {
+    showStatus("运行异常：" + error.message, "error");
+    console.error(error);
+  }
+});
+
+document.querySelectorAll(".tab-btn").forEach(function(button) {
+  button.addEventListener("click", function() {
+    switchTab(parseInt(this.dataset.tab, 10));
+  });
+});
+
+function csvCell(value) {
+  var text = String(value == null ? "" : value);
+  return '"' + text.replace(/"/g, '""') + '"';
+}
+
+document.getElementById("btn-export").addEventListener("click", function() {
+  if (allResults.length === 0) {
+    showStatus("表格中没有可导出的数据。", "warn");
+    return;
+  }
+
+  var rows = [[
+    "数据标识", "首个测量时间 (s)", "拟合优度 R²", "V0 (V)",
+    "浅陷阱峰深度 (eV)", "浅陷阱面密度 (m⁻²)", "浅峰性质",
+    "深陷阱峰深度 (eV)", "深陷阱面密度 (m⁻²)", "深峰性质",
+    "幅值 A1 (V)", "弛豫时间 τ1 (s)", "幅值 A2 (V)",
+    "弛豫时间 τ2 (s)", "残余电位 y0 (V)"
+  ]];
+
+  allResults.forEach(function(result) {
+    rows.push([
+      result.filename,
+      result.tFirst.toFixed(2),
+      result.r2.toFixed(4),
+      result.v0.toFixed(2),
+      result.shallow_E != null ? result.shallow_E.toFixed(4) : "-",
+      result.shallow_N != null ? result.shallow_N.toExponential(2) : "-",
+      peakNature(result.shallow_peak_region, result.shallow_boundary_warning),
+      result.deep_E != null ? result.deep_E.toFixed(4) : "-",
+      result.deep_N != null ? result.deep_N.toExponential(2) : "-",
+      peakNature(result.deep_peak_region, result.deep_boundary_warning),
+      result.A1.toFixed(2),
+      result.tau1.toFixed(2),
+      result.A2.toFixed(2),
+      result.tau2.toFixed(2),
+      result.y0.toFixed(2)
+    ]);
+  });
+
+  var csv = rows.map(function(row) {
+    return row.map(csvCell).join(",");
+  }).join("\r\n");
+  var blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+  var link = document.createElement("a");
+  var url = URL.createObjectURL(blob);
+  link.href = url;
+  link.download = "ISPD_Physics_Parameters.csv";
+  link.click();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById("tbtn-save1").addEventListener("click", function() {
+  var canvas = document.getElementById("chart1-canvas");
+  var link = document.createElement("a");
+  link.href = canvas.toDataURL("image/png");
+  link.download = "ISPD_Vt_Chart.png";
+  link.click();
+});
+
+document.getElementById("tbtn-save2").addEventListener("click", function() {
+  var canvas = document.getElementById("chart2-canvas");
+  var link = document.createElement("a");
+  link.href = canvas.toDataURL("image/png");
+  link.download = "ISPD_EtNt_Chart.png";
+  link.click();
+});
+
+document.getElementById("tbtn-clear1").addEventListener("click", clearCharts);
+document.getElementById("tbtn-clear2").addEventListener("click", clearCharts);

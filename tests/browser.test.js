@@ -39,14 +39,16 @@ const { chromium } = require("playwright");
     const connection = await page.evaluate(() => {
       const result = allResults[0];
       return {
-        curveE: result.EPostExtrapolated.at(-1),
+        curveStartE: result.EPostExtrapolated[0],
+        curveEndE: result.EPostExtrapolated.at(-1),
         peakE: result.deep_E,
-        curveN: result.NPostExtrapolated.at(-1),
-        peakN: result.deep_N
+        displayEnd: result.displayEnd,
+        tau: result.tau2
       };
     });
-    assert.ok(Math.abs(connection.curveE - connection.peakE) < 1e-10);
-    assert.ok(Math.abs(connection.curveN - connection.peakN) < 1);
+    assert.ok(connection.curveStartE < connection.peakE);
+    assert.ok(connection.peakE < connection.curveEndE);
+    assert.ok(connection.displayEnd >= 5 * connection.tau);
   } else if (workbookName.includes("120s")) {
     assert.strictEqual(cells[4], "0.7143");
     assert.match(cells[6], /首点前外推/);
@@ -54,14 +56,15 @@ const { chromium } = require("playwright");
     const connection = await page.evaluate(() => {
       const result = allResults[0];
       return {
-        curveE: result.EPreExtrapolated[0],
+        curveStartE: result.EPreExtrapolated[0],
+        curveEndE: result.EPreExtrapolated.at(-1),
         peakE: result.shallow_E,
-        curveN: result.NPreExtrapolated[0],
-        peakN: result.shallow_N
+        displayStart: result.displayStart
       };
     });
-    assert.ok(Math.abs(connection.curveE - connection.peakE) < 1e-10);
-    assert.ok(Math.abs(connection.curveN - connection.peakN) < 1);
+    assert.strictEqual(connection.displayStart, 0.1);
+    assert.ok(connection.curveStartE < connection.peakE);
+    assert.ok(connection.peakE < connection.curveEndE);
   } else if (workbookName.includes("180s")) {
     assert.strictEqual(cells[4], "0.8091");
     assert.match(cells[6], /首点前外推/);
@@ -108,8 +111,9 @@ const { chromium } = require("playwright");
     [15, 30, 90]
   );
   multiFileResults.forEach((result) => {
-    assert.strictEqual(result.displayStart, 5);
+    assert.ok(result.displayStart >= 0.1 && result.displayStart < 5);
     assert.ok(result.preExtrapolatedPoints > 0);
+    assert.ok(result.postExtrapolatedPoints > 0);
   });
   assert.strictEqual(browserErrors.length, 0, browserErrors.join("\n"));
 

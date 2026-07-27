@@ -6,6 +6,9 @@ var K_B = 8.617e-5;
 var EPS_0 = 8.854e-12;
 var E_CHARGE = 1.602e-19;
 var EXTRAPOLATION_START_SECONDS = 5;
+var MIN_DISPLAY_SECONDS = 0.1;
+var PRE_PEAK_TIME_FACTOR = 100;
+var POST_PEAK_TIME_FACTOR = 5;
 
 function assertValidSeries(t, v) {
   if (!Array.isArray(t) || !Array.isArray(v) || t.length !== v.length || t.length < 3) {
@@ -56,10 +59,12 @@ function compute(t, v, T, nu, eps_r, d_um) {
   var A2 = fit.A2;
   var tau2 = fit.tau2;
   var y0 = fit.y0;
-  var displayStart = Math.max(1e-9, Math.min(
-    EXTRAPOLATION_START_SECONDS, tau1, tau2
+  var minTau = Math.min(tau1, tau2);
+  var maxTau = Math.max(tau1, tau2);
+  var displayStart = Math.max(MIN_DISPLAY_SECONDS, Math.min(
+    EXTRAPOLATION_START_SECONDS, minTau / PRE_PEAK_TIME_FACTOR
   ));
-  var displayEnd = Math.max(tLast, tau1, tau2);
+  var displayEnd = Math.max(tLast, POST_PEAK_TIME_FACTOR * maxTau);
 
   // Step 2: fitted V-t curve is kept inside the measured time interval.
   var tMeasured = logspace(tFirst, tLast, 1000);
@@ -202,6 +207,7 @@ function trapSeries(times, T, nu, densityConstant, A1, tau1, A2, tau2) {
 
 return {
   compute: compute,
-  EXTRAPOLATION_START_SECONDS: EXTRAPOLATION_START_SECONDS
+  EXTRAPOLATION_START_SECONDS: EXTRAPOLATION_START_SECONDS,
+  MIN_DISPLAY_SECONDS: MIN_DISPLAY_SECONDS
 };
 })();

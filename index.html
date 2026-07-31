@@ -87,7 +87,9 @@
         <!-- Tab 1: V-t chart -->
         <div class="tab-content active" id="tab-content-0">
             <div class="toolbar">
-                <button class="tbtn" id="tbtn-save1">💾 导出图表</button>
+                <button class="tbtn" id="tbtn-png1">🖼 导出 PNG</button>
+                <button class="tbtn" id="tbtn-svg1">✒ 导出 SVG</button>
+                <button class="tbtn" id="tbtn-pdf1">📄 导出矢量 PDF</button>
                 <button class="tbtn" id="tbtn-clear1">🧹 清空图表</button>
                 <span class="coord-label">【就绪】</span>
             </div>
@@ -99,7 +101,9 @@
         <!-- Tab 2: Et-Nt chart -->
         <div class="tab-content" id="tab-content-1">
             <div class="toolbar">
-                <button class="tbtn" id="tbtn-save2">💾 导出图表</button>
+                <button class="tbtn" id="tbtn-png2">🖼 导出 PNG</button>
+                <button class="tbtn" id="tbtn-svg2">✒ 导出 SVG</button>
+                <button class="tbtn" id="tbtn-pdf2">📄 导出矢量 PDF</button>
                 <button class="tbtn" id="tbtn-clear2">🧹 清空图表</button>
                 <span class="coord-label">【就绪】</span>
             </div>
@@ -125,6 +129,10 @@
                     <tbody id="result-tbody"></tbody>
                 </table>
             </div>
+        </div>
+
+        <div class="vector-export-note">
+            SVG 和 PDF 为可编辑矢量格式；如必须提交 EMF，可使用 Inkscape 将 SVG 另存为 EMF。
         </div>
 
         <!-- Status Bar -->

@@ -5,6 +5,9 @@ var COLOR_PALETTE = [
 var datasets = {};
 var colorIndex = 0;
 var allResults = [];
+var currentVtDatasets = [];
+var currentTrapDatasets = [];
+var currentChartColors = [];
 
 function addFileItem(filename, color) {
   var item = document.createElement("li");
@@ -86,6 +89,9 @@ function clearCharts() {
   chart2.style.display = "none";
   document.getElementById("result-tbody").innerHTML = "";
   allResults = [];
+  currentVtDatasets = [];
+  currentTrapDatasets = [];
+  currentChartColors = [];
   showStatus("图表与特征数据已清空。");
 }
 
@@ -207,6 +213,9 @@ document.getElementById("btn-compute").addEventListener("click", function() {
 
     showStatus("正在运行双指数拟合与陷阱参数计算……");
     allResults = [];
+    currentVtDatasets = [];
+    currentTrapDatasets = [];
+    currentChartColors = [];
 
     selectedFiles.forEach(function(filename) {
       var source = datasets[filename];
@@ -240,6 +249,10 @@ document.getElementById("btn-compute").addEventListener("click", function() {
         label: filename
       });
     });
+
+    currentVtDatasets = vtDatasets;
+    currentTrapDatasets = trapDatasets;
+    currentChartColors = colors;
 
     var chart1 = document.getElementById("chart1-canvas");
     chart1.style.display = "block";
@@ -318,20 +331,100 @@ document.getElementById("btn-export").addEventListener("click", function() {
   URL.revokeObjectURL(url);
 });
 
-document.getElementById("tbtn-save1").addEventListener("click", function() {
-  var canvas = document.getElementById("chart1-canvas");
+function chartReady() {
+  if (allResults.length === 0) {
+    showStatus("当前没有可导出的图形，请先导入数据并运行物理反演。", "warn");
+    return false;
+  }
+  return true;
+}
+
+function downloadBlob(content, mimeType, filename) {
+  var blob = new Blob([content], { type: mimeType });
+  var url = URL.createObjectURL(blob);
+  var link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+}
+
+function downloadCanvasPng(canvasId, filename) {
+  if (!chartReady()) return;
+  var canvas = document.getElementById(canvasId);
   var link = document.createElement("a");
   link.href = canvas.toDataURL("image/png");
-  link.download = "ISPD_Vt_Chart.png";
+  link.download = filename;
+  document.body.appendChild(link);
   link.click();
+  document.body.removeChild(link);
+  showStatus("PNG 图形已导出：" + filename);
+}
+
+function downloadChartSvg(kind) {
+  if (!chartReady()) return;
+  var isVt = kind === "vt";
+  var svg = isVt ?
+    ChartRenderer.exportVtSvg(currentVtDatasets, currentChartColors) :
+    ChartRenderer.exportEtNtSvg(currentTrapDatasets, currentChartColors);
+  var filename = isVt ? "ISPD_Vt_Chart.svg" : "ISPD_EtNt_Chart.svg";
+  downloadBlob(svg, "image/svg+xml;charset=utf-8", filename);
+  showStatus("可编辑 SVG 矢量图已导出：" + filename);
+}
+
+function openVectorPdf(kind) {
+  if (!chartReady()) return;
+  var isVt = kind === "vt";
+  var title = isVt ? "ISPD_Vt_Chart" : "ISPD_EtNt_Chart";
+  var svg = isVt ?
+    ChartRenderer.exportVtSvg(currentVtDatasets, currentChartColors) :
+    ChartRenderer.exportEtNtSvg(currentTrapDatasets, currentChartColors);
+  var printWindow = window.open("", "_blank");
+  if (!printWindow) {
+    showStatus("浏览器阻止了打印窗口，请允许本站弹出窗口后重试。", "warn");
+    return;
+  }
+
+  svg = svg.replace(/^<\?xml[^>]*>\s*/, "");
+  printWindow.document.open();
+  printWindow.document.write(
+    "<!doctype html><html lang=\"zh-CN\"><head><meta charset=\"UTF-8\">" +
+    "<title>" + title + "</title><style>" +
+    "@page{size:180mm 120mm;margin:0}" +
+    "html,body{width:180mm;height:120mm;margin:0;background:#fff;overflow:hidden}" +
+    "body{display:flex;align-items:center;justify-content:center}" +
+    "svg{display:block;width:180mm;height:120mm}" +
+    "*{-webkit-print-color-adjust:exact;print-color-adjust:exact}" +
+    "</style></head><body>" + svg + "</body></html>"
+  );
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(function() {
+    printWindow.print();
+  }, 350);
+  showStatus("打印窗口已打开：请选择“另存为 PDF”，这不会连接实体打印机。");
+}
+
+document.getElementById("tbtn-png1").addEventListener("click", function() {
+  downloadCanvasPng("chart1-canvas", "ISPD_Vt_Chart.png");
+});
+document.getElementById("tbtn-svg1").addEventListener("click", function() {
+  downloadChartSvg("vt");
+});
+document.getElementById("tbtn-pdf1").addEventListener("click", function() {
+  openVectorPdf("vt");
 });
 
-document.getElementById("tbtn-save2").addEventListener("click", function() {
-  var canvas = document.getElementById("chart2-canvas");
-  var link = document.createElement("a");
-  link.href = canvas.toDataURL("image/png");
-  link.download = "ISPD_EtNt_Chart.png";
-  link.click();
+document.getElementById("tbtn-png2").addEventListener("click", function() {
+  downloadCanvasPng("chart2-canvas", "ISPD_EtNt_Chart.png");
+});
+document.getElementById("tbtn-svg2").addEventListener("click", function() {
+  downloadChartSvg("etnt");
+});
+document.getElementById("tbtn-pdf2").addEventListener("click", function() {
+  openVectorPdf("etnt");
 });
 
 document.getElementById("tbtn-clear1").addEventListener("click", clearCharts);

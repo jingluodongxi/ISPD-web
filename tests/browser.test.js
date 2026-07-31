@@ -7,6 +7,8 @@ const { chromium } = require("playwright");
 (async () => {
   const workbookPath = process.argv[2];
   const screenshotPath = process.argv[3];
+  const pdfPath = process.argv[4];
+  const svgPath = process.argv[5];
   const workbookName = path.basename(workbookPath || "");
   if (!workbookPath) throw new Error("Please provide a workbook path.");
 
@@ -19,6 +21,8 @@ const { chromium } = require("playwright");
   page.on("pageerror", (error) => browserErrors.push(error.message));
 
   await page.goto(pathToFileURL(path.resolve(__dirname, "..", "index.html")).href);
+  await page.click("#tbtn-svg1");
+  assert.match(await page.textContent("#status-bar"), /没有可导出的图形/);
   await page.setInputFiles("#file-input", workbookPath);
   await page.waitForFunction(() => document.querySelectorAll("#file-list li").length === 1);
   await page.click("#btn-compute");
@@ -27,6 +31,67 @@ const { chromium } = require("playwright");
   const status = await page.textContent("#status-bar");
   assert.match(status, /分析成功/);
   assert.strictEqual(await page.$eval("#chart2-canvas", (el) => el.style.display), "block");
+
+  // SVG exports must consist of editable vector elements and text, never a raster screenshot.
+  const vectorExports = await page.evaluate(() => ({
+    vt: ChartRenderer.exportVtSvg(currentVtDatasets, currentChartColors),
+    trap: ChartRenderer.exportEtNtSvg(currentTrapDatasets, currentChartColors)
+  }));
+  [vectorExports.vt, vectorExports.trap].forEach((svg) => {
+    assert.match(svg, /viewBox="0 0 1200 800"/);
+    assert.match(svg, /<text[^>]*>/);
+    assert.match(svg, /<polyline/);
+    assert.doesNotMatch(svg, /<image\b/i);
+    assert.doesNotMatch(svg, /data:image\/(png|jpeg|jpg)/i);
+  });
+  assert.match(vectorExports.trap, /stroke-dasharray=/);
+  assert.match(vectorExports.trap, /<polygon/);
+
+  const pngDownloadPromise = page.waitForEvent("download");
+  await page.click("#tbtn-png2");
+  const pngDownload = await pngDownloadPromise;
+  assert.strictEqual(pngDownload.suggestedFilename(), "ISPD_EtNt_Chart.png");
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.click("#tbtn-svg2");
+  const svgDownload = await downloadPromise;
+  assert.strictEqual(svgDownload.suggestedFilename(), "ISPD_EtNt_Chart.svg");
+  if (svgPath) await svgDownload.saveAs(svgPath);
+
+  const popupPromise = page.waitForEvent("popup");
+  await page.click("#tbtn-pdf2");
+  const printPage = await popupPromise;
+  await printPage.waitForLoadState("domcontentloaded");
+  assert.strictEqual(await printPage.locator("svg").count(), 1);
+  assert.strictEqual(await printPage.locator("canvas").count(), 0);
+  assert.strictEqual(await printPage.locator("img").count(), 0);
+  assert.match(await printPage.title(), /ISPD_EtNt_Chart/);
+  if (pdfPath) {
+    await printPage.pdf({
+      path: pdfPath,
+      width: "180mm",
+      height: "120mm",
+      margin: { top: 0, right: 0, bottom: 0, left: 0 },
+      printBackground: true
+    });
+  }
+  await printPage.close();
+
+  await page.click('.tab-btn[data-tab="0"]');
+  const vtDownloadPromise = page.waitForEvent("download");
+  await page.click("#tbtn-svg1");
+  const vtSvgDownload = await vtDownloadPromise;
+  assert.strictEqual(vtSvgDownload.suggestedFilename(), "ISPD_Vt_Chart.svg");
+
+  const vtPopupPromise = page.waitForEvent("popup");
+  await page.click("#tbtn-pdf1");
+  const vtPrintPage = await vtPopupPromise;
+  await vtPrintPage.waitForLoadState("domcontentloaded");
+  assert.strictEqual(await vtPrintPage.locator("svg").count(), 1);
+  assert.strictEqual(await vtPrintPage.locator("canvas").count(), 0);
+  assert.strictEqual(await vtPrintPage.locator("img").count(), 0);
+  assert.match(await vtPrintPage.title(), /ISPD_Vt_Chart/);
+  await vtPrintPage.close();
 
   await page.click('.tab-btn[data-tab="2"]');
   const cells = await page.$$eval("#result-tbody tr:first-child td", (items) =>
